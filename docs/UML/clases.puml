@@ -1,0 +1,112 @@
+@startuml SIDEA_Clases
+
+skinparam classAttributeIconSize 0
+skinparam classFontSize 12
+
+' === CORE ===
+abstract class Unidad {
+    # m_id : int
+    # m_nombre : string
+    # m_nodoBase : int
+    # m_nodoActual : int
+    # m_estado : EstadoUnidad*
+    # m_incidentesAtendidos : int
+    --
+    + atenderIncidente(Incidente) {abstract}
+    + getTipoUnidad() : string {abstract}
+    + tick()
+    + estaLibre() : bool
+    + cambiarEstado(EstadoUnidad*)
+}
+
+class Ambulancia extends Unidad {
+    + atenderIncidente(Incidente) override
+    + getTipoUnidad() : string
+}
+
+class Bombero extends Unidad {
+    + atenderIncidente(Incidente) override
+    + getTipoUnidad() : string
+}
+
+class Serenazgo extends Unidad {
+    + atenderIncidente(Incidente) override
+    + getTipoUnidad() : string
+}
+
+class Incidente {
+    - m_id : int
+    - m_tipo : TipoIncidente
+    - m_nodoUbicacion : int
+    - m_prioridad : PrioridadIncidente
+    - m_atendido : bool
+    --
+    + getId() : int
+    + getTipo() : TipoIncidente
+    + getPrioridad() : PrioridadIncidente
+    + marcarAtendido()
+}
+
+class CentralDespacho <<Singleton>> {
+    - {static} instancia : CentralDespacho
+    - m_unidades : vector<Unidad>
+    - m_cola : vector<Incidente>
+    - m_estrategia : EstrategiaDespacho
+    --
+    + {static} instancia() : CentralDespacho&
+    + recibirIncidente(Incidente)
+    + setEstrategia(EstrategiaDespacho)
+    + procesarCola()
+}
+
+' === STATE ===
+abstract class EstadoUnidad {
+    + manejar(Unidad&) {abstract}
+    + nombre() : string {abstract}
+}
+
+class EstadoLibre extends EstadoUnidad
+class EstadoEnRuta extends EstadoUnidad
+class EstadoAtendiendo extends EstadoUnidad
+class EstadoRegresando extends EstadoUnidad
+
+Unidad o-- EstadoUnidad : estado
+
+' === STRATEGY ===
+abstract class EstrategiaDespacho {
+    + seleccionar(unidades, incidente) {abstract}
+    + nombre() : string {abstract}
+}
+
+class EstrategiaMasCercana extends EstrategiaDespacho
+class EstrategiaPrioridad extends EstrategiaDespacho
+class EstrategiaBalanceCarga extends EstrategiaDespacho
+
+CentralDespacho o-- EstrategiaDespacho
+
+' === GRAPH ===
+class Grafo<T> {
+    + agregarNodo(id)
+    + agregarArista(origen, destino, peso)
+    + vecinos(nodo) : vector<Arista>
+    + dijkstra(origen) : ResultadoDijkstra
+}
+
+class ColaPrioridad<T> {
+    + push(elemento)
+    + pop() : T
+    + top() : T
+    + estaVacia() : bool
+}
+
+' === OBSERVER ===
+interface IObserver {
+    + actualizar(evento : string)
+}
+
+abstract class IObservable {
+    + suscribir(IObserver)
+    + notificar(evento)
+}
+
+@enduml

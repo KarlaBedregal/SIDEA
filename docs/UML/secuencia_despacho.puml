@@ -1,0 +1,42 @@
+@startuml Secuencia_Despacho
+
+actor Usuario
+participant "GeneradorIncidentes" as Gen
+participant "CentralDespacho\n<<Singleton>>" as Central
+participant "EstrategiaDespacho" as Estrategia
+participant "Unidad" as Unit
+participant "Dijkstra" as Dijk
+
+== Generación de incidente ==
+Gen -> Gen : crearAleatorio()
+Gen -> Central : recibirIncidente(inc)
+Central -> Central : encolar(inc)
+Central -> Central : condition_variable.notify_one()
+
+== Procesamiento ==
+Central -> Estrategia : seleccionar(unidades, inc)
+Estrategia -> Unit : estaLibre() ?
+Estrategia --> Central : unidadElegida
+
+== Asignación ==
+Central -> Dijk : dijkstra(mapa, nodoUnidad)
+Dijk --> Central : ruta[]
+Central -> Unit : setRuta(ruta)
+Central -> Unit : asignarIncidente(inc)
+Unit -> Unit : cambiarEstado(EstadoEnRuta)
+
+== Ejecución en hilo propio ==
+loop cada tick
+    Unit -> Unit : tick()
+    alt EnRuta
+        Unit -> Unit : avanzarEnRuta()
+    else Atendiendo
+        Unit -> Unit : atenderIncidente()
+        Unit -> Unit : cambiarEstado(EstadoRegresando)
+    else Regresando
+        Unit -> Unit : avanzarHaciaBase()
+        Unit -> Unit : cambiarEstado(EstadoLibre)
+    end
+end
+
+@enduml

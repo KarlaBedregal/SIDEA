@@ -1,0 +1,18 @@
+@startuml Estado_Unidad
+
+skinparam state {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+}
+
+[*] --> Libre : creación
+
+Libre --> EnRuta : se asigna incidente\n+ se calcula ruta Dijkstra
+EnRuta --> Atendiendo : llega al nodo\ndel incidente
+Atendiendo --> Regresando : incidente atendido\n(tiempo completado)
+Regresando --> Libre : llega a nodo base
+
+EnRuta --> EnRuta : avanza un nodo\nen la ruta
+Regresando --> Regresando : avanza un nodo\nhacia la base
+
+@enduml

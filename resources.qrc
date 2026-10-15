@@ -1,0 +1,12 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/icons">
+        <file>assets/icons/ambulancia.png</file>
+        <file>assets/icons/bombero.png</file>
+        <file>assets/icons/serenazgo.png</file>
+        <file>assets/icons/incendio.png</file>
+        <file>assets/icons/accidente.png</file>
+        <file>assets/icons/robo.png</file>
+        <file>assets/icons/urgencia.png</file>
+    </qresource>
+</RCC>
