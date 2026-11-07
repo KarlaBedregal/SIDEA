@@ -9,7 +9,7 @@ class EstadoUnidad;
 class Unidad {
 public:
     Unidad(int id, std::string nombre, int nodoBase);
-    virtual ~Unidad() = default;
+    virtual ~Unidad();
 
     virtual void atenderIncidente(const Incidente& inc) = 0;
     virtual std::string getTipoUnidad() const = 0;

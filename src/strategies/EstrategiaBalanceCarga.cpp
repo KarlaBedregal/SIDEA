@@ -2,6 +2,7 @@
 #include "core/Unidad.h"
 #include "core/Incidente.h"
 #include <algorithm>
+#include <limits>
 
 std::shared_ptr<Unidad> EstrategiaBalanceCarga::seleccionar(
     const std::vector<std::shared_ptr<Unidad>>& unidades,
