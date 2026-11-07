@@ -2,6 +2,8 @@
 #include "states/EstadoUnidad.h"
 #include "states/EstadoLibre.h"
 
+Unidad::~Unidad() = default;
+
 Unidad::Unidad(int id, std::string nombre, int nodoBase)
     : m_id(id), m_nombre(std::move(nombre)), m_nodoBase(nodoBase), m_nodoActual(nodoBase),
       m_estado(std::make_unique<EstadoLibre>()) {}
