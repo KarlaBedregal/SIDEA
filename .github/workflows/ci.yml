@@ -1,0 +1,40 @@
+name: CI — SIDEA
+
+on:
+  pull_request:
+    branches: [develop, main]
+
+jobs:
+  build-and-test:
+    name: Compilar y testear
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar Qt6 y dependencias
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake \
+            build-essential \
+            qt6-base-dev \
+            libqt6charts6-dev \
+            libgl1-mesa-dev
+
+      - name: Cache dependencias de CMake (GoogleTest)
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: gtest-v1.14.0-${{ runner.os }}
+
+      - name: Configurar CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Debug
+
+      - name: Compilar
+        run: cmake --build build --parallel
+
+      - name: Correr tests
+        run: ctest --test-dir build --output-on-failure
+        env:
+          QT_QPA_PLATFORM: offscreen
