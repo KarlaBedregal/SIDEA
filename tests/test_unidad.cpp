@@ -1,8 +1,13 @@
 #include <gtest/gtest.h>
+#include <type_traits>
 #include "core/Ambulancia.h"
 #include "core/Bombero.h"
 #include "core/Serenazgo.h"
 #include "core/UnidadFactory.h"
+
+static_assert(std::is_abstract_v<Unidad>, "Unidad debe ser abstracta");
+static_assert(std::has_virtual_destructor_v<Unidad>,
+              "Unidad debe permitir destruir subclases mediante la clase base");
 
 TEST(UnidadTest, AmbulanciaCreacion) {
     Ambulancia a(1, "AMB-01", 0);
