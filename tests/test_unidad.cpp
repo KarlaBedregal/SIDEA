@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <type_traits>
+#include <stdexcept>
 #include "core/Ambulancia.h"
 #include "core/Bombero.h"
 #include "core/Incidente.h"
@@ -74,4 +75,44 @@ TEST(UnidadTest, FactoryCreaTiposCorrecto) {
     EXPECT_EQ(u1->getTipoUnidad(), "Ambulancia");
     EXPECT_EQ(u2->getTipoUnidad(), "Bombero");
     EXPECT_EQ(u3->getTipoUnidad(), "Serenazgo");
+    EXPECT_NE(std::dynamic_pointer_cast<Ambulancia>(u1), nullptr);
+    EXPECT_NE(std::dynamic_pointer_cast<Bombero>(u2), nullptr);
+    EXPECT_NE(std::dynamic_pointer_cast<Serenazgo>(u3), nullptr);
+}
+
+TEST(UnidadTest, FactoryConservaDatosYEstadoInicialParaLosTresTipos) {
+    for (auto tipo : {TipoUnidad::AMBULANCIA, TipoUnidad::BOMBERO, TipoUnidad::SERENAZGO}) {
+        SCOPED_TRACE(static_cast<int>(tipo));
+        auto unidad = UnidadFactory::crear(42, tipo, "UNIDAD-42", 19);
+
+        ASSERT_NE(unidad, nullptr);
+        EXPECT_EQ(unidad->getId(), 42);
+        EXPECT_EQ(unidad->getNombre(), "UNIDAD-42");
+        EXPECT_EQ(unidad->getNodoBase(), 19);
+        EXPECT_EQ(unidad->getNodoActual(), 19);
+        EXPECT_TRUE(unidad->estaLibre());
+        EXPECT_EQ(unidad->getEstadoNombre(), "Libre");
+        EXPECT_EQ(unidad->getIncidentesAtendidos(), 0);
+        EXPECT_DOUBLE_EQ(unidad->getTiempoOcupado(), 0.0);
+    }
+}
+
+TEST(UnidadTest, FactoryRechazaTipoDesconocido) {
+    EXPECT_THROW(UnidadFactory::crear(1, static_cast<TipoUnidad>(-1), "INVALIDA", 0),
+                 std::invalid_argument);
+    EXPECT_THROW(UnidadFactory::crear(1, static_cast<TipoUnidad>(3), "INVALIDA", 0),
+                 std::invalid_argument);
+}
+
+TEST(UnidadTest, FactoryCreaUnidadesIndependientes) {
+    auto primera = UnidadFactory::crear(1, TipoUnidad::AMBULANCIA, "AMB-01", 0);
+    auto segunda = UnidadFactory::crear(2, TipoUnidad::AMBULANCIA, "AMB-02", 5);
+    Incidente urgencia(1, TipoIncidente::URGENCIA_MEDICA, 3, PrioridadIncidente::ALTA);
+
+    EXPECT_NE(primera, segunda);
+    primera->atenderIncidente(urgencia);
+
+    EXPECT_EQ(primera->getIncidentesAtendidos(), 1);
+    EXPECT_EQ(segunda->getIncidentesAtendidos(), 0);
+    EXPECT_EQ(segunda->getNodoActual(), 5);
 }
