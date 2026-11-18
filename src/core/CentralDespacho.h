@@ -1,39 +1,27 @@
 #pragma once
-#include <memory>
-#include <mutex>
-#include <vector>
-#include <condition_variable>
+#include <QObject>
+#include "../gui/MainWindow.h"
+#include "CentralDespacho.h"
 
-class Incidente;
-class Unidad;
-class EstrategiaDespacho;
-
-class CentralDespacho {
+class ControladorDespacho : public QObject {
+    Q_OBJECT
 public:
-    static CentralDespacho& instancia();
+    ControladorDespacho(MainWindow* vista, QObject* parent = nullptr)
+        : QObject(parent), m_vista(vista) 
+    {
+        connect(m_vista, &MainWindow::simulacionIniciada, this, &ControladorDespacho::onIniciar);
+        connect(m_vista, &MainWindow::simulacionDetenida, this, &ControladorDespacho::onDetener);
+    }
 
-    CentralDespacho(const CentralDespacho&) = delete;
-    CentralDespacho& operator=(const CentralDespacho&) = delete;
-
-    void registrarUnidad(std::shared_ptr<Unidad> unidad);
-    void recibirIncidente(std::shared_ptr<Incidente> incidente);
-    void setEstrategia(std::unique_ptr<EstrategiaDespacho> estrategia);
-    void procesarCola();
-    void iniciar();
-    void detener();
-
-    const std::vector<std::shared_ptr<Unidad>>& getUnidades() const;
-    int totalIncidentesPendientes() const;
-    int totalIncidentesAtendidos() const;
+private slots:
+    void onIniciar() {
+        CentralDespacho::instancia().iniciar();
+    }
+    
+    void onDetener() {
+        CentralDespacho::instancia().detener();
+    }
 
 private:
-    CentralDespacho() = default;
-
-    std::vector<std::shared_ptr<Unidad>> m_unidades;
-    std::vector<std::shared_ptr<Incidente>> m_cola;
-    std::unique_ptr<EstrategiaDespacho> m_estrategia;
-    mutable std::mutex m_mutex;
-    std::condition_variable m_cv;
-    bool m_activa = false;
-    int m_atendidos = 0;
+    MainWindow* m_vista;
 };
