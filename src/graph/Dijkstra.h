@@ -3,15 +3,35 @@
 #include <vector>
 #include <limits>
 #include <queue>
+#include <algorithm>
 #include "Grafo.h"
 
 struct ResultadoDijkstra {
     std::unordered_map<int, double> distancias;
     std::unordered_map<int, int> anteriores;
 
-    std::vector<int> reconstruirRuta(int destino) const;
-    double distanciaA(int destino) const;
-    bool alcanzable(int destino) const;
+    double distanciaA(int destino) const {
+        auto it = distancias.find(destino);
+        if (it == distancias.end()) return std::numeric_limits<double>::infinity();
+        return it->second;
+    }
+
+    bool alcanzable(int destino) const {
+        return distanciaA(destino) < std::numeric_limits<double>::infinity();
+    }
+
+    std::vector<int> reconstruirRuta(int destino) const {
+        std::vector<int> ruta;
+        int actual = destino;
+        while (actual != -1) {
+            ruta.push_back(actual);
+            auto it = anteriores.find(actual);
+            if (it == anteriores.end() || it->second == -1) break;
+            actual = it->second;
+        }
+        std::reverse(ruta.begin(), ruta.end());
+        return ruta;
+    }
 };
 
 template<typename T>

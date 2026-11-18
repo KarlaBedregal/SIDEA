@@ -5,7 +5,6 @@
 class MapaWidget;
 class PanelControl;
 class EstadisticasWidget;
-class CentralDespacho;
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -18,12 +17,12 @@ public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
 
-private slots:
-    void onIniciarSimulacion();
-    void onPausarSimulacion();
-    void onDetenerSimulacion();
-    void onEstrategiaChanged(int index);
-    void onTickSimulacion();
+signals:
+    void simulacionIniciada();
+    void simulacionPausada();
+    void simulacionDetenida();
+    void estrategiaCambiada(int index);
+    void tickSimulacion();
 
 private:
     void configurarUI();

@@ -25,9 +25,3 @@ void MainWindow::configurarUI() {
 void MainWindow::configurarConexiones() {
     // TODO Sprint 3: conectar signals de PanelControl con slots de MainWindow
 }
-
-void MainWindow::onIniciarSimulacion() {}
-void MainWindow::onPausarSimulacion() {}
-void MainWindow::onDetenerSimulacion() {}
-void MainWindow::onEstrategiaChanged(int index) {}
-void MainWindow::onTickSimulacion() {}
