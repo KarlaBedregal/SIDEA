@@ -3,9 +3,7 @@
 #include "MapaWidget.h"
 #include "PanelControl.h"
 #include "EstadisticasWidget.h"
-#include <QHBoxLayout>
 #include <QVBoxLayout>
-#include <QSplitter>
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent), ui(new Ui::MainWindow) {
@@ -17,11 +15,18 @@ MainWindow::MainWindow(QWidget* parent)
 MainWindow::~MainWindow() { delete ui; }
 
 void MainWindow::configurarUI() {
-    // TODO Sprint 3: ensamblar widgets en el layout principal
     setWindowTitle("SIDEA — Sistema Inteligente de Despacho de Emergencias de Arequipa");
     resize(1280, 800);
+
+    // El panel de control no estaba creado: se coloca en su contenedor del .ui
+    m_panelControl = new PanelControl(this);
+    auto* layout = new QVBoxLayout(ui->panelControlContainer);
+    layout->addWidget(m_panelControl);
 }
 
 void MainWindow::configurarConexiones() {
-    // TODO Sprint 3: conectar signals de PanelControl con slots de MainWindow
+    connect(m_panelControl, &PanelControl::iniciarPresionado, this, &MainWindow::simulacionIniciada);
+    connect(m_panelControl, &PanelControl::pausarPresionado, this, &MainWindow::simulacionPausada);
+    connect(m_panelControl, &PanelControl::detenerPresionado, this, &MainWindow::simulacionDetenida);
+    connect(m_panelControl, &PanelControl::estrategiaChanged, this, &MainWindow::estrategiaCambiada);
 }

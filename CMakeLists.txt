@@ -16,6 +16,7 @@ set(SIDEA_LIB_SOURCES
     src/core/Bombero.cpp
     src/core/Serenazgo.cpp
     src/core/CentralDespacho.cpp
+    src/core/ControladorDespacho.h
     src/core/IncidenteFactory.cpp
     src/core/UnidadFactory.cpp
     src/core/states/EstadoLibre.cpp
