@@ -15,6 +15,7 @@ set(TEST_SOURCES
     test_incidente.cpp
     test_unidad.cpp
     test_estrategias.cpp
+    test_threading.cpp
 )
 
 add_executable(SIDEA_tests ${TEST_SOURCES})

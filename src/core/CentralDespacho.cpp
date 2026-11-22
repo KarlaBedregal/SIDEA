@@ -2,6 +2,8 @@
 #include "Incidente.h"
 #include "Unidad.h"
 #include "strategies/EstrategiaDespacho.h"
+#include "graph/MapaArequipa.h"
+#include "threading/SimuladorThread.h"
 #include <algorithm>
 
 // Patrón Singleton (Meyers' Singleton):
@@ -74,8 +76,36 @@ void CentralDespacho::procesarCola() {
     }
 }
 
-void CentralDespacho::iniciar() { m_activa = true; }
-void CentralDespacho::detener() { m_activa = false; m_cv.notify_all(); }
+void CentralDespacho::iniciar() {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (m_activa) return;
+    m_activa = true;
+
+    if (!m_mapa) m_mapa = std::make_unique<MapaArequipa>();
+
+    for (const auto& u : m_unidades) {
+        auto sim = std::make_unique<SimuladorThread>(u, *m_mapa, m_tickMs);
+        sim->iniciar();
+        m_hilos.push_back(std::move(sim));
+    }
+}
+
+void CentralDespacho::detener() {
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_activa = false;
+    }
+    m_cv.notify_all();
+    for (auto& h : m_hilos) {
+        if (h) h->detener();
+    }
+    m_hilos.clear();
+}
+
+void CentralDespacho::setTickMs(int ms) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_tickMs = ms;
+}
 
 const std::vector<std::shared_ptr<Unidad>>& CentralDespacho::getUnidades() const {
     return m_unidades;
