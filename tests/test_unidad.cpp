@@ -1,8 +1,16 @@
 #include <gtest/gtest.h>
+#include <type_traits>
+#include <stdexcept>
 #include "core/Ambulancia.h"
 #include "core/Bombero.h"
+#include "core/Incidente.h"
 #include "core/Serenazgo.h"
 #include "core/UnidadFactory.h"
+#include "core/IncidenteFactory.h"
+
+static_assert(std::is_abstract_v<Unidad>, "Unidad debe ser abstracta");
+static_assert(std::has_virtual_destructor_v<Unidad>,
+              "Unidad debe permitir destruir subclases mediante la clase base");
 
 TEST(UnidadTest, AmbulanciaCreacion) {
     Ambulancia a(1, "AMB-01", 0);
@@ -18,6 +26,48 @@ TEST(UnidadTest, BomberoCreacion) {
     EXPECT_EQ(b.getNodoBase(), 3);
 }
 
+TEST(UnidadTest, SerenazgoCreacion) {
+    Serenazgo s(3, "SER-01", 5);
+    EXPECT_EQ(s.getId(), 3);
+    EXPECT_EQ(s.getTipoUnidad(), "Serenazgo");
+    EXPECT_TRUE(s.estaLibre());
+}
+
+TEST(UnidadTest, AmbulanciaSoloAtiendeUrgenciasMedicas) {
+    Ambulancia ambulancia(1, "AMB-01", 0);
+    Incidente urgencia(1, TipoIncidente::URGENCIA_MEDICA, 2, PrioridadIncidente::ALTA);
+    Incidente incendio(2, TipoIncidente::INCENDIO, 3, PrioridadIncidente::ALTA);
+
+    ambulancia.atenderIncidente(urgencia);
+    ambulancia.atenderIncidente(incendio);
+
+    EXPECT_EQ(ambulancia.getIncidentesAtendidos(), 1);
+}
+
+TEST(UnidadTest, BomberoAtiendeIncendiosYAccidentes) {
+    Bombero bombero(2, "BOM-01", 3);
+    Incidente incendio(1, TipoIncidente::INCENDIO, 4, PrioridadIncidente::ALTA);
+    Incidente accidente(2, TipoIncidente::ACCIDENTE, 5, PrioridadIncidente::MEDIA);
+    Incidente robo(3, TipoIncidente::ROBO, 6, PrioridadIncidente::BAJA);
+
+    bombero.atenderIncidente(incendio);
+    bombero.atenderIncidente(accidente);
+    bombero.atenderIncidente(robo);
+
+    EXPECT_EQ(bombero.getIncidentesAtendidos(), 2);
+}
+
+TEST(UnidadTest, SerenazgoSoloAtiendeRobos) {
+    Serenazgo serenazgo(3, "SER-01", 5);
+    Incidente robo(1, TipoIncidente::ROBO, 2, PrioridadIncidente::ALTA);
+    Incidente urgencia(2, TipoIncidente::URGENCIA_MEDICA, 3, PrioridadIncidente::ALTA);
+
+    serenazgo.atenderIncidente(robo);
+    serenazgo.atenderIncidente(urgencia);
+
+    EXPECT_EQ(serenazgo.getIncidentesAtendidos(), 1);
+}
+
 TEST(UnidadTest, FactoryCreaTiposCorrecto) {
     auto u1 = UnidadFactory::crear(1, TipoUnidad::AMBULANCIA, "AMB-F1", 0);
     auto u2 = UnidadFactory::crear(2, TipoUnidad::BOMBERO, "BOM-F1", 1);
@@ -26,4 +76,73 @@ TEST(UnidadTest, FactoryCreaTiposCorrecto) {
     EXPECT_EQ(u1->getTipoUnidad(), "Ambulancia");
     EXPECT_EQ(u2->getTipoUnidad(), "Bombero");
     EXPECT_EQ(u3->getTipoUnidad(), "Serenazgo");
+    EXPECT_NE(std::dynamic_pointer_cast<Ambulancia>(u1), nullptr);
+    EXPECT_NE(std::dynamic_pointer_cast<Bombero>(u2), nullptr);
+    EXPECT_NE(std::dynamic_pointer_cast<Serenazgo>(u3), nullptr);
+}
+
+TEST(UnidadTest, FactoryConservaDatosYEstadoInicialParaLosTresTipos) {
+    for (auto tipo : {TipoUnidad::AMBULANCIA, TipoUnidad::BOMBERO, TipoUnidad::SERENAZGO}) {
+        SCOPED_TRACE(static_cast<int>(tipo));
+        auto unidad = UnidadFactory::crear(42, tipo, "UNIDAD-42", 19);
+
+        ASSERT_NE(unidad, nullptr);
+        EXPECT_EQ(unidad->getId(), 42);
+        EXPECT_EQ(unidad->getNombre(), "UNIDAD-42");
+        EXPECT_EQ(unidad->getNodoBase(), 19);
+        EXPECT_EQ(unidad->getNodoActual(), 19);
+        EXPECT_TRUE(unidad->estaLibre());
+        EXPECT_EQ(unidad->getEstadoNombre(), "Libre");
+        EXPECT_EQ(unidad->getIncidentesAtendidos(), 0);
+        EXPECT_DOUBLE_EQ(unidad->getTiempoOcupado(), 0.0);
+    }
+}
+
+TEST(UnidadTest, FactoryRechazaTipoDesconocido) {
+    EXPECT_THROW(UnidadFactory::crear(1, static_cast<TipoUnidad>(-1), "INVALIDA", 0),
+                 std::invalid_argument);
+    EXPECT_THROW(UnidadFactory::crear(1, static_cast<TipoUnidad>(3), "INVALIDA", 0),
+                 std::invalid_argument);
+}
+
+TEST(UnidadTest, FactoryCreaUnidadesIndependientes) {
+    auto primera = UnidadFactory::crear(1, TipoUnidad::AMBULANCIA, "AMB-01", 0);
+    auto segunda = UnidadFactory::crear(2, TipoUnidad::AMBULANCIA, "AMB-02", 5);
+    Incidente urgencia(1, TipoIncidente::URGENCIA_MEDICA, 3, PrioridadIncidente::ALTA);
+
+    EXPECT_NE(primera, segunda);
+    primera->atenderIncidente(urgencia);
+
+    EXPECT_EQ(primera->getIncidentesAtendidos(), 1);
+    EXPECT_EQ(segunda->getIncidentesAtendidos(), 0);
+    EXPECT_EQ(segunda->getNodoActual(), 5);
+}
+
+TEST(UnidadTest, FactoryUnidadesArrancanLibres) {
+    auto amb = UnidadFactory::crear(1, TipoUnidad::AMBULANCIA, "AMB-F1", 0);
+    auto bom = UnidadFactory::crear(2, TipoUnidad::BOMBERO,    "BOM-F1", 1);
+    auto ser = UnidadFactory::crear(3, TipoUnidad::SERENAZGO,  "SER-F1", 2);
+
+    EXPECT_TRUE(amb->estaLibre());
+    EXPECT_TRUE(bom->estaLibre());
+    EXPECT_TRUE(ser->estaLibre());
+}
+
+TEST(UnidadTest, FactoryIncidenteCrearAtributosCorrectos) {
+    auto inc = IncidenteFactory::crear(42, TipoIncidente::INCENDIO, 7, PrioridadIncidente::CRITICA);
+
+    EXPECT_EQ(inc->getId(), 42);
+    EXPECT_EQ(inc->getTipo(), TipoIncidente::INCENDIO);
+    EXPECT_EQ(inc->getNodoUbicacion(), 7);
+    EXPECT_EQ(inc->getPrioridad(), PrioridadIncidente::CRITICA);
+    EXPECT_FALSE(inc->estaAtendido());
+}
+
+TEST(UnidadTest, FactoryIncidenteAleatorioNodoDentroRango) {
+    const int nodoMax = 19;
+    for (int i = 0; i < 50; ++i) {
+        auto inc = IncidenteFactory::crearAleatorio(i, nodoMax);
+        EXPECT_GE(inc->getNodoUbicacion(), 0);
+        EXPECT_LE(inc->getNodoUbicacion(), nodoMax);
+    }
 }

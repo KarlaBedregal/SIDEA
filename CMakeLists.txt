@@ -42,7 +42,8 @@ add_library(sidea_core OBJECT ${SIDEA_LIB_SOURCES})
 target_include_directories(sidea_core PUBLIC src)
 target_link_libraries(sidea_core PUBLIC Qt6::Core Qt6::Widgets Qt6::Charts)
 
-add_executable(SIDEA src/main.cpp resources.qrc)
+# Los iconos de resources.qrc estan pendientes; la ventana inicial no los utiliza.
+add_executable(SIDEA src/main.cpp)
 target_link_libraries(SIDEA PRIVATE sidea_core)
 
 enable_testing()

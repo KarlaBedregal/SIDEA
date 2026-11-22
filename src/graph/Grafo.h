@@ -14,6 +14,7 @@ template<typename T>
 class Grafo {
 public:
     void agregarNodo(int id);
+    // Crea los extremos si todavía no existen, conservando sus aristas previas.
     void agregarArista(int origen, int destino, double peso, T datos = T{});
     void agregarAristaBidireccional(int origen, int destino, double peso, T datos = T{});
 
@@ -35,6 +36,8 @@ void Grafo<T>::agregarNodo(int id) {
 
 template<typename T>
 void Grafo<T>::agregarArista(int origen, int destino, double peso, T datos) {
+    agregarNodo(origen);
+    agregarNodo(destino);
     m_adyacencia[origen].push_back({destino, peso, datos});
 }
 
@@ -59,7 +62,8 @@ bool Grafo<T>::existeNodo(int id) const {
 template<typename T>
 std::vector<int> Grafo<T>::nodos() const {
     std::vector<int> resultado;
-    for (auto& [id, _] : m_adyacencia) resultado.push_back(id);
+    resultado.reserve(m_adyacencia.size());
+    for (const auto& [id, _] : m_adyacencia) resultado.push_back(id);
     return resultado;
 }
 
