@@ -25,6 +25,7 @@ void CentralDespacho::recibirIncidente(std::shared_ptr<Incidente> incidente) {
         m_cola.push_back(std::move(incidente));
     }
     m_cv.notify_one();
+    notificar("incidente_recibido");
 }
 
 void CentralDespacho::setEstrategia(std::unique_ptr<EstrategiaDespacho> estrategia) {
@@ -33,47 +34,45 @@ void CentralDespacho::setEstrategia(std::unique_ptr<EstrategiaDespacho> estrateg
 }
 
 void CentralDespacho::procesarCola() {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    if (m_cola.empty()) {
-        return;
-    }
+    std::shared_ptr<Unidad> unidadAsignada;
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (m_cola.empty()) return;
 
-    // Extraer el incidente con mayor prioridad (CRITICA > ALTA > MEDIA > BAJA)
-    // std::max_element conserva el orden de llegada (FIFO) ante prioridades iguales
-    auto itMayorPrioridad = std::max_element(
-        m_cola.begin(), m_cola.end(),
-        [](const std::shared_ptr<Incidente>& a, const std::shared_ptr<Incidente>& b) {
-            if (!a) return true;
-            if (!b) return false;
-            return static_cast<int>(a->getPrioridad()) < static_cast<int>(b->getPrioridad());
-        }
-    );
+        // Extraer el incidente con mayor prioridad (CRITICA > ALTA > MEDIA > BAJA)
+        // std::max_element conserva el orden de llegada (FIFO) ante prioridades iguales
+        auto itMayorPrioridad = std::max_element(
+            m_cola.begin(), m_cola.end(),
+            [](const std::shared_ptr<Incidente>& a, const std::shared_ptr<Incidente>& b) {
+                if (!a) return true;
+                if (!b) return false;
+                return static_cast<int>(a->getPrioridad()) < static_cast<int>(b->getPrioridad());
+            }
+        );
 
-    if (itMayorPrioridad == m_cola.end() || !(*itMayorPrioridad)) {
-        return;
-    }
+        if (itMayorPrioridad == m_cola.end() || !(*itMayorPrioridad)) return;
 
-    auto incidente = *itMayorPrioridad;
+        auto incidente = *itMayorPrioridad;
 
-    // Buscar una unidad disponible utilizando la estrategia configurada o seleccionando la primera libre
-    std::shared_ptr<Unidad> unidad = nullptr;
-    if (m_estrategia) {
-        unidad = m_estrategia->seleccionar(m_unidades, *incidente);
-    } else {
-        for (const auto& u : m_unidades) {
-            if (u && u->estaLibre()) {
-                unidad = u;
-                break;
+        // Buscar una unidad disponible utilizando la estrategia configurada o la primera libre
+        std::shared_ptr<Unidad> unidad;
+        if (m_estrategia) {
+            unidad = m_estrategia->seleccionar(m_unidades, *incidente);
+        } else {
+            for (const auto& u : m_unidades) {
+                if (u && u->estaLibre()) { unidad = u; break; }
             }
         }
-    }
 
-    // Si existe una unidad disponible, se le asigna el incidente y se extrae de la cola
-    if (unidad) {
-        unidad->asignarIncidente(incidente);
-        m_cola.erase(itMayorPrioridad);
-        m_atendidos++;
+        if (unidad) {
+            unidad->asignarIncidente(incidente);
+            m_cola.erase(itMayorPrioridad);
+            m_atendidos++;
+            unidadAsignada = unidad;
+        }
     }
+    // Notificar fuera del lock para no bloquear a los observadores
+    if (unidadAsignada) notificar("unidad_asignada");
 }
 
 void CentralDespacho::iniciar() {
@@ -105,6 +104,11 @@ void CentralDespacho::detener() {
 void CentralDespacho::setTickMs(int ms) {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_tickMs = ms;
+}
+
+// Llamado por EstadoRegresando::manejar() cuando la unidad llega a su nodo base (#7)
+void CentralDespacho::notificarUnidadLibre() {
+    notificar("unidad_libre");
 }
 
 const std::vector<std::shared_ptr<Unidad>>& CentralDespacho::getUnidades() const {

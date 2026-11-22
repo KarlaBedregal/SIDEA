@@ -5,7 +5,8 @@
 class MapaWidget;
 class PanelControl;
 class EstadisticasWidget;
-class CentralDespacho;
+class MapaArequipa;
+class IObserver;
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -24,13 +25,16 @@ private slots:
     void onDetenerSimulacion();
     void onEstrategiaChanged(int index);
     void onTickSimulacion();
+    void onEventoDespacho(QString evento);
 
 private:
     void configurarUI();
     void configurarConexiones();
 
     Ui::MainWindow* ui;
-    MapaWidget* m_mapaWidget;
-    PanelControl* m_panelControl;
-    EstadisticasWidget* m_estadisticasWidget;
+    std::unique_ptr<MapaArequipa> m_mapa;
+    MapaWidget* m_mapaWidget = nullptr;
+    PanelControl* m_panelControl = nullptr;
+    EstadisticasWidget* m_estadisticasWidget = nullptr;
+    std::shared_ptr<IObserver> m_observer;
 };
