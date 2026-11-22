@@ -1,0 +1,14 @@
+SIDEA_tests_autogen/timestamp: \
+	/home/karla/SIDEA/tests/CMakeLists.txt \
+	/home/karla/SIDEA/tests/test_cola_prioridad.cpp \
+	/home/karla/SIDEA/tests/test_dijkstra.cpp \
+	/home/karla/SIDEA/tests/test_estrategias.cpp \
+	/home/karla/SIDEA/tests/test_grafo.cpp \
+	/home/karla/SIDEA/tests/test_incidente.cpp \
+	/home/karla/SIDEA/tests/test_threading.cpp \
+	/home/karla/SIDEA/tests/test_unidad.cpp \
+	/usr/share/cmake/Modules/ExternalProject/shared_internal_commands.cmake \
+	/usr/share/cmake/Modules/FetchContent.cmake \
+	/usr/share/cmake/Modules/FetchContent/CMakeLists.cmake.in \
+	/usr/share/cmake/Modules/GoogleTest.cmake \
+	/usr/bin/cmake
