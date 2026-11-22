@@ -26,9 +26,9 @@ Cada integrante tiene issues asignados por sprint (sorteo). Búscalos en la pest
 
 | Sprint | Fechas | Enfoque |
 |--------|--------|---------|
-| **Sprint 1** | 7 nov | Compilación, estructura base y tests |
-| **Sprint 2** | 8 – 21 nov | Lógica de despacho + concurrencia |
-| **Sprint 3** | 22 nov – 5 dic | GUI animada + estadísticas + predicción |
+| **Sprint 1** | 7 nov | Compilación, estructura base y tests | ✅ Completo |
+| **Sprint 2** | 8 – 24 nov | Lógica de despacho + concurrencia | En curso |
+| **Sprint 3** | 25 nov – 26 nov | GUI animada + estadísticas + predicción | Pendiente |
 
 ---
 
