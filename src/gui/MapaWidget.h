@@ -1,11 +1,17 @@
 #pragma once
 #include <QWidget>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 class MapaArequipa;
 class Unidad;
 class Incidente;
+class QMouseEvent;
+class QPaintEvent;
+class QPainter;
+class QPointF;
+class QTimer;
 
 class MapaWidget : public QWidget {
     Q_OBJECT
@@ -19,15 +25,26 @@ public:
 
 protected:
     void paintEvent(QPaintEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
     QSize sizeHint() const override;
 
 private:
+    struct AnimacionUnidad {
+        int nodoDesde;
+        int nodoHasta;
+        qreal progreso;
+    };
+
     void dibujarGrafo(QPainter& p);
     void dibujarUnidades(QPainter& p);
     void dibujarIncidentes(QPainter& p);
+    void avanzarAnimacion();
     QPointF nodoAPixel(int nodo) const;
 
     const MapaArequipa& m_mapa;
     std::vector<std::shared_ptr<Unidad>> m_unidades;
     std::vector<std::shared_ptr<Incidente>> m_incidentes;
+    std::unordered_map<int, AnimacionUnidad> m_animaciones;
+    QTimer* m_timerAnimacion = nullptr;
+    int m_nodoSobrevolado = -1;
 };
