@@ -30,6 +30,7 @@ public:
     const std::vector<std::shared_ptr<Unidad>>& getUnidades() const;
     int totalIncidentesPendientes() const;
     int totalIncidentesAtendidos() const;
+    void reiniciar();
 
 private:
     CentralDespacho() = default;
