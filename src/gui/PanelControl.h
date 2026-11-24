@@ -14,6 +14,10 @@ public:
     int estrategiaSeleccionada() const;
     int velocidadSimulacion() const;
 
+    void marcarIniciado();
+    void marcarPausado();
+    void marcarDetenido();
+
 signals:
     void iniciarPresionado();
     void pausarPresionado();
@@ -23,10 +27,10 @@ signals:
 private:
     void configurarUI();
 
-    QPushButton* m_btnIniciar;
-    QPushButton* m_btnPausar;
-    QPushButton* m_btnDetener;
-    QComboBox* m_cbEstrategia;
-    QSpinBox* m_sbVelocidad;
-    QLabel* m_lblEstado;
+    QPushButton* m_btnIniciar = nullptr;
+    QPushButton* m_btnPausar = nullptr;
+    QPushButton* m_btnDetener = nullptr;
+    QComboBox* m_cbEstrategia = nullptr;
+    QSpinBox* m_sbVelocidad = nullptr;
+    QLabel* m_lblEstado = nullptr;
 };
