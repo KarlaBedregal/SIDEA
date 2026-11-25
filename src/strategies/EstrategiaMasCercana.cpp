@@ -10,15 +10,17 @@ std::shared_ptr<Unidad> EstrategiaMasCercana::seleccionar(
     const std::vector<std::shared_ptr<Unidad>>& unidades,
     const Incidente& incidente)
 {
-    // TODO Sprint 2: para cada unidad libre, calcular Dijkstra desde su nodo actual
-    // al nodo del incidente y devolver la de menor distancia
-    std::shared_ptr<Unidad> elegida;
+    std::shared_ptr<Unidad> elegida = nullptr;
     double menorDist = std::numeric_limits<double>::infinity();
+    const int destino = incidente.getNodoUbicacion();
 
-    for (auto& u : unidades) {
-        if (!u->estaLibre()) continue;
+    for (const auto& u : unidades) {
+        if (!u || !u->estaLibre()) continue;
+
         auto res = dijkstra(m_mapa.grafo(), u->getNodoActual());
-        double dist = res.distanciaA(incidente.getNodoUbicacion());
+        if (!res.alcanzable(destino)) continue;
+
+        double dist = res.distanciaA(destino);
         if (dist < menorDist) {
             menorDist = dist;
             elegida = u;

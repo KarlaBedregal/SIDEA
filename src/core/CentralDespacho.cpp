@@ -121,3 +121,12 @@ int CentralDespacho::totalIncidentesPendientes() const {
 }
 
 int CentralDespacho::totalIncidentesAtendidos() const { return m_atendidos; }
+
+void CentralDespacho::reiniciar() {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_unidades.clear();
+    m_cola.clear();
+    m_estrategia.reset();
+    m_activa = false;
+    m_atendidos = 0;
+}
