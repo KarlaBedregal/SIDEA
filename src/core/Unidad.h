@@ -35,6 +35,9 @@ public:
     void setRuta(std::vector<int> ruta);
     // Reserva la unidad; false si está ocupada o el incidente/ruta no es válido.
     bool asignarIncidente(std::shared_ptr<Incidente> inc);
+    // Recorrido preventivo interrumpible: la unidad sigue disponible para despachos.
+    bool reubicar(int destino);
+    void cancelarReubicacion();
 
 private:
     friend class EstadoLibre;
@@ -45,6 +48,7 @@ private:
     bool avanzarEnRuta();
     std::unique_ptr<EstadoUnidad> m_estadoPendiente;
     bool m_enTick = false;
+    bool m_reubicando = false;
     std::size_t m_indiceRuta = 0;
     int m_ticksAtencionRestantes = 0;
     std::chrono::steady_clock::time_point m_inicioOcupacion;

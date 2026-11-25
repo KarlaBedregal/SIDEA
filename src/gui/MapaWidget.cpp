@@ -19,7 +19,13 @@ MapaWidget::MapaWidget(const MapaArequipa& mapa, QWidget* parent)
     setMouseTracking(true);
 
     m_timerAnimacion = new QTimer(this);
-    m_timerAnimacion->setInterval(200);
+    for (const auto& nombre : {"ambulancia", "bombero", "serenazgo", "incendio",
+                               "accidente", "robo", "urgencia_medica"}) {
+        const QString clave = QString::fromLatin1(nombre);
+        m_iconos.insert(clave, QPixmap(":/icons/" + clave + ".png"));
+    }
+    m_relojAnimacion.start();
+    m_timerAnimacion->setInterval(16);
     connect(m_timerAnimacion, &QTimer::timeout, this, &MapaWidget::avanzarAnimacion);
     m_timerAnimacion->start();
 }
@@ -33,7 +39,7 @@ void MapaWidget::setUnidades(const std::vector<std::shared_ptr<Unidad>>& unidade
         unidadesActuales.emplace(id, true);
         if (m_animaciones.find(id) == m_animaciones.end()) {
             const int nodo = unidad->getNodoActual();
-            m_animaciones.emplace(id, AnimacionUnidad{nodo, nodo, 1.0});
+            m_animaciones.emplace(id, AnimacionUnidad{nodoAPixel(nodo), nodo, 1.0});
         }
     }
     for (auto it = m_animaciones.begin(); it != m_animaciones.end();) {
@@ -48,6 +54,11 @@ void MapaWidget::setUnidades(const std::vector<std::shared_ptr<Unidad>>& unidade
 
 void MapaWidget::setIncidentes(const std::vector<std::shared_ptr<Incidente>>& incidentes) {
     m_incidentes = incidentes;
+    actualizar();
+}
+
+void MapaWidget::setDuracionMovimiento(int ms) {
+    m_duracionMovimiento = std::max(1, ms);
 }
 
 void MapaWidget::actualizar() { update(); }
@@ -184,26 +195,32 @@ void MapaWidget::dibujarUnidades(QPainter& p) {
         const auto it = m_animaciones.find(unidad->getId());
         if (it != m_animaciones.end()) {
             const auto& animacion = it->second;
-            const QPointF desde = nodoAPixel(animacion.nodoDesde);
+            const QPointF desde = animacion.desde;
             const QPointF hasta = nodoAPixel(animacion.nodoHasta);
             centro = desde + (hasta - desde) * animacion.progreso;
         }
 
-        QColor color("#2E86AB");
         const std::string tipo = unidad->getTipoUnidad();
-        if (tipo == "Ambulancia") color = QColor("#D64545");
-        else if (tipo == "Bombero") color = QColor("#E67E22");
-        else if (tipo == "Serenazgo") color = QColor("#2864A5");
-
-        p.setPen(QPen(Qt::white, 2.0));
-        p.setBrush(color);
-        p.drawEllipse(centro, 8.0, 8.0);
+        QString clave = "serenazgo";
+        if (tipo == "Ambulancia") clave = "ambulancia";
+        else if (tipo == "Bombero") clave = "bombero";
+        // Separar unidades estacionadas en un mismo nodo.
+        int indice = 0;
+        for (const auto& otra : m_unidades) {
+            if (otra && otra->getId() < unidad->getId() &&
+                otra->getNodoActual() == unidad->getNodoActual()) ++indice;
+        }
+        centro += QPointF((indice % 3) * 20.0, 14.0 + (indice / 3) * 26.0);
+        p.drawPixmap(QRectF(centro.x() - 16, centro.y() - 16, 32, 32).toRect(), m_iconos.value(clave));
+        p.setPen(QColor("#17324D"));
+        p.drawText(QRectF(centro.x() - 16, centro.y() + 14, 32, 12),
+                   Qt::AlignCenter, QString::number(unidad->getId()));
     }
     p.restore();
 }
 
 void MapaWidget::avanzarAnimacion() {
-    constexpr qreal incrementoPorTick = 0.4; // 200 ms por tick del mapa
+    const qreal incrementoPorTick = static_cast<qreal>(m_relojAnimacion.restart()) / m_duracionMovimiento;
     for (const auto& unidad : m_unidades) {
         if (!unidad) continue;
 
@@ -211,13 +228,15 @@ void MapaWidget::avanzarAnimacion() {
         const int nodoActual = unidad->getNodoActual();
         auto it = m_animaciones.find(id);
         if (it == m_animaciones.end()) {
-            m_animaciones.emplace(id, AnimacionUnidad{nodoActual, nodoActual, 1.0});
+            m_animaciones.emplace(id, AnimacionUnidad{nodoAPixel(nodoActual), nodoActual, 1.0});
             continue;
         }
 
         auto& animacion = it->second;
         if (nodoActual != animacion.nodoHasta) {
-            animacion = {animacion.nodoHasta, nodoActual, 0.0};
+            const QPointF visible = animacion.desde +
+                (nodoAPixel(animacion.nodoHasta) - animacion.desde) * animacion.progreso;
+            animacion = {visible, nodoActual, 0.0};
         } else if (animacion.progreso < 1.0) {
             animacion.progreso = std::min(1.0, animacion.progreso + incrementoPorTick);
         }
@@ -226,5 +245,22 @@ void MapaWidget::avanzarAnimacion() {
 }
 
 void MapaWidget::dibujarIncidentes(QPainter& p) {
-    // TODO Sprint 3: dibujar ícono de cada incidente activo
+    p.save();
+    QHash<int, int> porNodo;
+    for (const auto& incidente : m_incidentes) {
+        if (!incidente || incidente->estaAtendido() ||
+            !m_mapa.grafo().existeNodo(incidente->getNodoUbicacion())) continue;
+        QString clave;
+        switch (incidente->getTipo()) {
+            case TipoIncidente::INCENDIO: clave = "incendio"; break;
+            case TipoIncidente::ACCIDENTE: clave = "accidente"; break;
+            case TipoIncidente::ROBO: clave = "robo"; break;
+            case TipoIncidente::URGENCIA_MEDICA: clave = "urgencia_medica"; break;
+        }
+        const int indice = porNodo[incidente->getNodoUbicacion()]++;
+        const QPointF centro = nodoAPixel(incidente->getNodoUbicacion()) +
+            QPointF((indice % 3) * 28.0, -22.0 - (indice / 3) * 32.0);
+        p.drawPixmap(QRectF(centro.x() - 16, centro.y() - 16, 32, 32).toRect(), m_iconos.value(clave));
+    }
+    p.restore();
 }

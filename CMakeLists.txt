@@ -38,11 +38,10 @@ set(SIDEA_LIB_SOURCES
     src/prediction/ModeloPrediccion.cpp
 )
 
-add_library(sidea_core OBJECT ${SIDEA_LIB_SOURCES})
+add_library(sidea_core OBJECT ${SIDEA_LIB_SOURCES} resources.qrc)
 target_include_directories(sidea_core PUBLIC src)
 target_link_libraries(sidea_core PUBLIC Qt6::Core Qt6::Widgets Qt6::Charts)
 
-# Los iconos de resources.qrc estan pendientes; la ventana inicial no los utiliza.
 add_executable(SIDEA src/main.cpp)
 target_link_libraries(SIDEA PRIVATE sidea_core)
 
@@ -54,3 +53,9 @@ target_link_libraries(SIDEA_demo_estados PRIVATE sidea_core)
 
 add_executable(SIDEA_demo_cola examples/demo_productor_consumidor.cpp)
 target_link_libraries(SIDEA_demo_cola PRIVATE sidea_core)
+
+add_executable(SIDEA_capturas examples/capturas.cpp)
+target_link_libraries(SIDEA_capturas PRIVATE sidea_core)
+
+add_executable(SIDEA_comparar examples/comparar_prediccion.cpp)
+target_link_libraries(SIDEA_comparar PRIVATE sidea_core)

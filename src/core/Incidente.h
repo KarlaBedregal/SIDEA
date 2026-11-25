@@ -1,5 +1,7 @@
 #pragma once
 #include <string>
+#include <atomic>
+#include <chrono>
 
 enum class TipoIncidente { INCENDIO, ACCIDENTE, ROBO, URGENCIA_MEDICA };
 enum class PrioridadIncidente { BAJA = 1, MEDIA = 2, ALTA = 3, CRITICA = 4 };
@@ -14,6 +16,8 @@ public:
     PrioridadIncidente getPrioridad() const;
     bool estaAtendido() const;
     void marcarAtendido();
+    void marcarLlegada();
+    double tiempoRespuesta() const;
     std::string tipoToString() const;
     std::string prioridadToString() const;
 
@@ -22,5 +26,7 @@ private:
     TipoIncidente m_tipo;
     int m_nodoUbicacion;
     PrioridadIncidente m_prioridad;
-    bool m_atendido = false;
+    std::atomic<bool> m_atendido{false};
+    std::chrono::steady_clock::time_point m_creado = std::chrono::steady_clock::now();
+    std::atomic<double> m_tiempoRespuesta{-1.0};
 };

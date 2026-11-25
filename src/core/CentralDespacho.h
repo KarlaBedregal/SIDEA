@@ -7,6 +7,16 @@
 #include <condition_variable>
 #include <thread>
 #include "patterns/IObservable.h"
+#include "prediction/HistorialIncidentes.h"
+
+struct ResumenComparacion {
+    std::string estrategia;
+    bool prediccion;
+    int asignados = 0;
+    int llegadas = 0;
+    int atendidos = 0;
+    double respuestaMediaSegundos = 0.0;
+};
 
 class Incidente;
 class Unidad;
@@ -33,6 +43,11 @@ public:
 
     std::vector<std::shared_ptr<Unidad>> getUnidades() const;
     std::vector<std::shared_ptr<Incidente>> getIncidentesPendientes() const;
+    std::vector<std::shared_ptr<Incidente>> getIncidentesActivos() const;
+    void setReubicacionPreventiva(bool activa);
+    bool reubicacionPreventiva() const;
+    void reubicarUnidades();
+    std::vector<ResumenComparacion> comparacionPrediccion() const;
     int totalIncidentesPendientes() const;
     int totalIncidentesAtendidos() const;
     void reiniciar();
@@ -55,4 +70,12 @@ private:
     std::mutex m_cicloMutex;
     std::uint64_t m_revision = 0;
     int m_tickMs = 500;
+    struct RegistroDespacho {
+        std::shared_ptr<Incidente> incidente;
+        std::string estrategia;
+        bool prediccion = false;
+    };
+    bool m_reubicacionPreventiva = false;
+    HistorialIncidentes m_historial;
+    std::vector<RegistroDespacho> m_registros;
 };
