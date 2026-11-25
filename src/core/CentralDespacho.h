@@ -43,4 +43,5 @@ private:
     std::condition_variable m_cv;
     bool m_activa = false;
     int m_atendidos = 0;
+    int m_tickMs = 500;
 };

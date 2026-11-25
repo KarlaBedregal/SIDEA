@@ -5,6 +5,8 @@
 class MapaWidget;
 class PanelControl;
 class EstadisticasWidget;
+class MapaArequipa;
+class IObserver;
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -29,7 +31,9 @@ private:
     void configurarConexiones();
 
     Ui::MainWindow* ui;
+    std::unique_ptr<MapaArequipa> m_mapa;
     MapaWidget* m_mapaWidget;
     PanelControl* m_panelControl;
     EstadisticasWidget* m_estadisticasWidget;
+    std::shared_ptr<IObserver> m_observer;
 };
