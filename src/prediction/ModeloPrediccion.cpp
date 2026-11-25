@@ -1,9 +1,10 @@
 #include "ModeloPrediccion.h"
 #include "HistorialIncidentes.h"
+#include "graph/MapaArequipa.h"
 #include <algorithm>
 
-ModeloPrediccion::ModeloPrediccion(const HistorialIncidentes& historial)
-    : m_historial(historial) {}
+ModeloPrediccion::ModeloPrediccion(const HistorialIncidentes& historial, const MapaArequipa& mapa)
+    : m_historial(historial), m_mapa(mapa) {}
 
 double ModeloPrediccion::calcularProbabilidad(int nodo, int hora) const {
     int total = static_cast<int>(m_historial.todos().size());
@@ -21,12 +22,19 @@ PrediccionZona ModeloPrediccion::zonaMasRiesgosa(int horaActual) const {
 }
 
 std::vector<PrediccionZona> ModeloPrediccion::topZonas(int n, int horaActual) const {
-    // TODO Sprint 3: recorrer todos los nodos del mapa y calcular probabilidad
     std::vector<PrediccionZona> resultado;
-    // Placeholder hasta tener acceso al mapa
+    for (int nodo : m_mapa.grafo().nodos()) {
+        resultado.push_back({nodo, calcularProbabilidad(nodo, horaActual)});
+    }
+    std::sort(resultado.begin(), resultado.end(),
+              [](const PrediccionZona& a, const PrediccionZona& b) {
+                  return a.probabilidad > b.probabilidad;
+              });
+    if (n > 0 && static_cast<int>(resultado.size()) > n)
+        resultado.resize(n);
     return resultado;
 }
 
 void ModeloPrediccion::actualizar() {
-    // TODO Sprint 3: re-calcular modelo con datos nuevos del historial
+    // El modelo recalcula dinámicamente en cada llamada a topZonas().
 }

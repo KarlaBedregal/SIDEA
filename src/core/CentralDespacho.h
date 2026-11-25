@@ -32,6 +32,7 @@ public:
     void notificarUnidadLibre();
 
     std::vector<std::shared_ptr<Unidad>> getUnidades() const;
+    std::vector<std::shared_ptr<Incidente>> getIncidentesPendientes() const;
     int totalIncidentesPendientes() const;
     int totalIncidentesAtendidos() const;
     void reiniciar();
