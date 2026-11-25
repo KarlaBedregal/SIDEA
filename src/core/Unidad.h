@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -16,6 +17,7 @@ public:
 
     void cambiarEstado(std::unique_ptr<EstadoUnidad> nuevoEstado);
     void tick();
+    void avanzarNodo(int nodo);
 
     int getId() const;
     std::string getNombre() const;
@@ -39,4 +41,5 @@ protected:
     std::shared_ptr<Incidente> m_incidenteActual;
     int m_incidentesAtendidos = 0;
     double m_tiempoOcupado = 0.0;
+    mutable std::recursive_mutex m_mutex;
 };

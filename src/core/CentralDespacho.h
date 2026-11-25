@@ -3,12 +3,15 @@
 #include <mutex>
 #include <vector>
 #include <condition_variable>
+#include "patterns/IObservable.h"
 
 class Incidente;
 class Unidad;
 class EstrategiaDespacho;
+class MapaArequipa;
+class SimuladorThread;
 
-class CentralDespacho {
+class CentralDespacho : public IObservable {
 public:
     static CentralDespacho& instancia();
 
@@ -21,6 +24,8 @@ public:
     void procesarCola();
     void iniciar();
     void detener();
+    void setTickMs(int ms);
+    void notificarUnidadLibre();
 
     const std::vector<std::shared_ptr<Unidad>>& getUnidades() const;
     int totalIncidentesPendientes() const;
@@ -32,6 +37,8 @@ private:
     std::vector<std::shared_ptr<Unidad>> m_unidades;
     std::vector<std::shared_ptr<Incidente>> m_cola;
     std::unique_ptr<EstrategiaDespacho> m_estrategia;
+    std::unique_ptr<MapaArequipa> m_mapa;
+    std::vector<std::unique_ptr<SimuladorThread>> m_hilos;
     mutable std::mutex m_mutex;
     std::condition_variable m_cv;
     bool m_activa = false;
