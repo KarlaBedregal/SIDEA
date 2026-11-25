@@ -1,10 +1,14 @@
 #pragma once
+#include <chrono>
+#include <cstddef>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
 class Incidente;
 class EstadoUnidad;
+class MapaArequipa;
 
 class Unidad {
 public:
@@ -16,6 +20,7 @@ public:
 
     void cambiarEstado(std::unique_ptr<EstadoUnidad> nuevoEstado);
     void tick();
+    void avanzarNodo(int nodo);
 
     int getId() const;
     std::string getNombre() const;
@@ -25,9 +30,25 @@ public:
     std::string getEstadoNombre() const;
     int getIncidentesAtendidos() const;
     double getTiempoOcupado() const;
+    bool puedeAtender(const Incidente& inc) const;
 
     void setRuta(std::vector<int> ruta);
-    void asignarIncidente(std::shared_ptr<Incidente> inc);
+    // Reserva la unidad; false si está ocupada o el incidente/ruta no es válido.
+    bool asignarIncidente(std::shared_ptr<Incidente> inc);
+
+private:
+    friend class EstadoLibre;
+    friend class EstadoEnRuta;
+    friend class EstadoAtendiendo;
+    friend class EstadoRegresando;
+    bool prepararRuta(int destino);
+    bool avanzarEnRuta();
+    std::unique_ptr<EstadoUnidad> m_estadoPendiente;
+    bool m_enTick = false;
+    std::size_t m_indiceRuta = 0;
+    int m_ticksAtencionRestantes = 0;
+    std::chrono::steady_clock::time_point m_inicioOcupacion;
+    std::unique_ptr<const MapaArequipa> m_mapa;
 
 protected:
     int m_id;
@@ -39,4 +60,5 @@ protected:
     std::shared_ptr<Incidente> m_incidenteActual;
     int m_incidentesAtendidos = 0;
     double m_tiempoOcupado = 0.0;
+    mutable std::recursive_mutex m_mutex;
 };

@@ -1,0 +1,7 @@
+SimuladorThreadTest.ArrancarDetener 1 0.186567
+SimuladorThreadTest.TresHilosConcurrentes 1 0.339751
+SimuladorThreadTest.DetenerSinIniciar 1 0.0337375
+SimuladorThreadTest.AccesoConcurrenteAUnidad 1 0.196509
+UnidadThreadSafetyTest.TickYGettersConcurrentes 1 0.033285
+UnidadThreadSafetyTest.SetRutaYAvanzarNodoConcurrente 1 0.0302344
+---

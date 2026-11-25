@@ -11,12 +11,12 @@ Cada integrante tiene issues asignados por sprint (sorteo). Búscalos en la pest
 
 | Integrante | Sprint 1 | Sprint 2 | Sprint 3 |
 |------------|----------|----------|----------|
-| **KarlaBedregal** | [#3 Dijkstra + ColaPrioridad](../../issues/3) ✅ | [#10 Threads](../../issues/10) · [#12 Observer Qt](../../issues/12) | — |
-| **tniia** | [#2 Grafo + Unidad](../../issues/2) ✅ | [#7 Patrón State](../../issues/7) · [#11 Productor-consumidor](../../issues/11) | — |
-| **ISacck144** | [#4 Mapa + CentralDespacho](../../issues/4) ✅ | [#8 Estrategia más cercana](../../issues/8) | [#15 Panel de control](../../issues/15) |
-| **Daniel-IS04** | [#1 Setup + Incidente](../../issues/1) ✅ | [#9 Estrategias prioridad/balance](../../issues/9) | [#16 Estadísticas](../../issues/16) |
-| **SharonCondoriUNSA** | [#5 Subclases Unidad](../../issues/5) ✅ | — | [#13 Mapa Qt animado](../../issues/13) · [#17 Historial + predicción](../../issues/17) |
-| **FernandoBarra05** | [#6 Factories + tests](../../issues/6) | — | [#14 Íconos + movimiento](../../issues/14) · [#18 UML + docs](../../issues/18) |
+| **KarlaBedregal** | [#3 Dijkstra + ColaPrioridad](../../issues/3) ✅ | [#10 Threads](../../issues/10) ✅ · [#12 Observer Qt](../../issues/12) ✅ | — |
+| **tniia** | [#2 Grafo + Unidad](../../issues/2) ✅ | [#7 Patrón State](../../issues/7) ✅ · [#11 Productor-consumidor](../../issues/11) ✅ | — |
+| **ISacck144** | [#4 Mapa + CentralDespacho](../../issues/4) ✅ | [#8 Estrategia más cercana](../../issues/8) ✅ | [#15 Panel de control](../../issues/15) |
+| **Daniel-IS04** | [#1 Setup + Incidente](../../issues/1) ✅ | [#9 Estrategias prioridad/balance](../../issues/9) ✅ | [#16 Estadísticas](../../issues/16) |
+| **SharonCondoriUNSA** | [#5 Subclases Unidad](../../issues/5) ✅ | — | [#13 Mapa Qt animado](../../issues/13) ✅ · [#17 Historial + predicción](../../issues/17) |
+| **FernandoBarra05** | [#6 Factories + tests](../../issues/6) ✅ | — | [#14 Íconos + movimiento](../../issues/14) · [#18 UML + docs](../../issues/18) |
 
 > ✅ = mergeado. Abre tu issue antes de empezar y muévelo a "In Progress" en el Kanban.
 
@@ -24,11 +24,11 @@ Cada integrante tiene issues asignados por sprint (sorteo). Búscalos en la pest
 
 ## Sprints
 
-| Sprint | Fechas | Enfoque |
-|--------|--------|---------|
-| **Sprint 1** | 7 nov | Compilación, estructura base y tests |
-| **Sprint 2** | 8 – 21 nov | Lógica de despacho + concurrencia |
-| **Sprint 3** | 22 nov – 5 dic | GUI animada + estadísticas + predicción |
+| Sprint | Fechas | Enfoque | Estado |
+|--------|--------|---------|--------|
+| **Sprint 1** | 7 nov | Compilación, estructura base y tests | ✅ Completo |
+| **Sprint 2** | 8 – 25 nov | Lógica de despacho + concurrencia | ✅ Completo |
+| **Sprint 3** | 25 nov – 5 dic | GUI animada + estadísticas + predicción | En curso |
 
 ---
 
@@ -90,7 +90,7 @@ Cada integrante tiene issues asignados por sprint (sorteo). Búscalos en la pest
 - Implementar `SimuladorThread::iniciar()` y `SimuladorThread::detener()`: gestiona los hilos de todas las unidades registradas con `CentralDespacho`
 - Proteger con `std::mutex` el acceso a `m_nodoActual`, `m_ruta` y `m_estado`
 
-**Criterio de aceptación:** Se pueden crear 3 unidades, iniciar sus hilos, y detenerlos sin deadlock ni crash. `valgrind` no reporta race conditions.
+**Criterio de aceptación:** Se pueden crear 3 unidades, iniciar sus hilos, y detenerlos sin deadlock ni crash. ThreadSanitizer reporta 0 data races.
 
 ---
 
@@ -99,33 +99,33 @@ Cada integrante tiene issues asignados por sprint (sorteo). Búscalos en la pest
 **Archivos:** `src/threading/GeneradorIncidentes.h/cpp`, `src/core/CentralDespacho.h/cpp`
 
 **Tareas:**
-- Implementar `GeneradorIncidentes::iniciar()`: thread que cada N segundos llama `IncidenteFactory::crearAleatorio()` y lo pasa a `CentralDespacho::recibirIncidente()`
-- Implementar `GeneradorIncidentes::detener()`: detiene el thread productor
-- Completar `CentralDespacho::recibirIncidente(inc)`: encola el incidente y hace `m_cv.notify_one()`
-- Completar `CentralDespacho::iniciar()`: loop consumidor que espera en `m_cv.wait()`, llama `procesarCola()` y repite mientras `m_activa`
+- Implementar `GeneradorIncidentes::iniciar()`: thread que cada N ms llama `IncidenteFactory::crearAleatorio()` y lo pasa a `CentralDespacho::recibirIncidente()`
+- Implementar `GeneradorIncidentes::detener()`: detiene el thread productor con parada inmediata via `condition_variable`
+- `CentralDespacho::recibirIncidente(inc)`: encola el incidente y hace `m_cv.notify_one()`
+- Hilo consumidor interno (`bucleConsumo`) que espera en `m_cv.wait()`, despacha y repite mientras `m_activa`
 - El acceso a `m_cola` debe estar protegido por `m_mutex`
 
-**Criterio de aceptación:** El sistema genera incidentes automáticamente y los procesa sin race conditions. `m_cola` nunca crece indefinidamente si hay unidades libres.
+**Criterio de aceptación:** Productor y consumidor en paralelo sin pérdida de incidentes y sin busy-wait. `detener()` limpio en menos de 250ms.
 
 ---
 
 ### #12 — Patrón Observer Qt · KarlaBedregal
 
-**Archivos:** `src/patterns/IObserver.h`, `src/patterns/IObservable.cpp`, `src/gui/MainWindow.h/cpp`, `src/gui/MapaWidget.h/cpp`
+**Archivos:** `src/patterns/IObserver.h`, `src/patterns/IObservable.h/cpp`, `src/gui/MainWindow.h/cpp`
 
 **Tareas:**
-- Completar `IObservable::suscribir(observer)` y `IObservable::notificar(evento)`
-- Hacer que `CentralDespacho` herede de `IObservable` y llame `notificar("incidente_asignado")` al despachar
-- Hacer que `MainWindow` implemente `IObserver` y actualice la GUI al recibir una notificación
-- La notificación debe cruzar el hilo de trabajo al hilo Qt usando `QMetaObject::invokeMethod(..., Qt::QueuedConnection)`
+- `IObservable` thread-safe: mutex propio, copia local en `notificar()` para evitar deadlock
+- `CentralDespacho` hereda de `IObservable` y emite `incidente_recibido`, `unidad_asignada`, `unidad_libre`
+- `MainWindow` escucha via `MainWindowObserver` (adapter) con `QMetaObject::invokeMethod(..., Qt::QueuedConnection)`
+- Las notificaciones desde hilos secundarios nunca tocan widgets directamente
 
-**Criterio de aceptación:** Al asignar un incidente desde un hilo de fondo, la GUI se actualiza sin crash. No se llama directamente a widgets Qt desde hilos que no son el hilo principal.
+**Criterio de aceptación:** Al asignar un incidente desde un hilo de fondo, la GUI se actualiza sin crash. Sin segfault al detener.
 
 ---
 
 ## Sprint 3 — detalle de tareas
 
-### #13 — Mapa animado en Qt · SharonCondoriUNSA
+### #13 — Mapa animado en Qt · SharonCondoriUNSA ✅
 
 **Archivos:** `src/gui/MapaWidget.h/cpp`
 
@@ -209,7 +209,7 @@ Cada integrante tiene issues asignados por sprint (sorteo). Búscalos en la pest
 ## Flujo de trabajo
 
 ```
-main  ←  develop  ←  feature/S2-B1-descripcion
+main  ←  develop  ←  feature/SX-BX-descripcion
 ```
 
 ```bash
@@ -218,13 +218,13 @@ git checkout develop
 git pull origin develop
 
 # 2. Crear rama con número de issue
-git checkout -b feature/S2-B7-state    # cambia el número por el tuyo
+git checkout -b feature/S3-B2-iconos    # cambia el número por el tuyo
 
 # 3. Implementar, commitear
-git commit -m "feat: implementar EstadoEnRuta con avance por ruta"
+git commit -m "feat: agregar íconos de unidades al mapa"
 
 # 4. PR siempre hacia develop
-git push origin feature/S2-B7-state
+git push origin feature/S3-B2-iconos
 ```
 
 > PR hacia `develop` siempre. Con 1 aprobación se puede mergear.  

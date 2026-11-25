@@ -48,3 +48,9 @@ target_link_libraries(SIDEA PRIVATE sidea_core)
 
 enable_testing()
 add_subdirectory(tests)
+
+add_executable(SIDEA_demo_estados examples/demo_estados.cpp)
+target_link_libraries(SIDEA_demo_estados PRIVATE sidea_core)
+
+add_executable(SIDEA_demo_cola examples/demo_productor_consumidor.cpp)
+target_link_libraries(SIDEA_demo_cola PRIVATE sidea_core)

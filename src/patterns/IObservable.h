@@ -1,7 +1,8 @@
 #pragma once
-#include <vector>
-#include <memory>
 #include <algorithm>
+#include <memory>
+#include <mutex>
+#include <vector>
 #include "IObserver.h"
 
 class IObservable {
@@ -15,5 +16,6 @@ protected:
     void notificar(const std::string& evento);
 
 private:
+    mutable std::mutex m_mutexObs;
     std::vector<std::shared_ptr<IObserver>> m_observadores;
 };
