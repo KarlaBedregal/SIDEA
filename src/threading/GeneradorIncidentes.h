@@ -21,6 +21,7 @@ public:
     void detener();
     bool estaActivo() const;
     bool estaPausado() const;
+    int totalGenerados() const;
 
 private:
     void bucleGeneracion();
@@ -34,5 +35,5 @@ private:
     std::atomic<bool> m_pausado{false};
     mutable std::mutex m_mutex;
     std::condition_variable m_cv;
-    int m_contadorId = 0;
+    std::atomic<int> m_contadorId{0};
 };

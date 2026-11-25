@@ -24,6 +24,7 @@ void GeneradorIncidentes::iniciar() {
         if (m_pausado) reanudar();
         return;
     }
+    if (m_hilo.joinable()) m_hilo.join();
     m_activo = true;
     m_pausado = false;
     m_hilo = std::thread(&GeneradorIncidentes::bucleGeneracion, this);
@@ -57,10 +58,13 @@ void GeneradorIncidentes::detener() {
 
 bool GeneradorIncidentes::estaActivo() const { return m_activo; }
 bool GeneradorIncidentes::estaPausado() const { return m_pausado; }
+int GeneradorIncidentes::totalGenerados() const { return m_contadorId.load(); }
 
 void GeneradorIncidentes::bucleGeneracion() {
     std::unique_lock<std::mutex> lock(m_mutex);
     while (m_activo) {
+        if (m_limiteIncidentes > 0 && m_contadorId.load() >= m_limiteIncidentes)
+            break;
         m_cv.wait(lock, [this]() { return !m_activo || !m_pausado; });
         if (!m_activo) break;
 
@@ -75,6 +79,8 @@ void GeneradorIncidentes::bucleGeneracion() {
         lock.unlock();
         m_central.recibirIncidente(inc);
         lock.lock();
+        if (m_limiteIncidentes > 0 && m_contadorId.load() >= m_limiteIncidentes)
+            m_activo = false;
     }
     m_activo = false;
 }
