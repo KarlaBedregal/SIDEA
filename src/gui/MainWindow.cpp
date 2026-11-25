@@ -46,6 +46,11 @@ MainWindow::~MainWindow() {
 void MainWindow::configurarUI() {
     setWindowTitle("SIDEA — Sistema Inteligente de Despacho de Emergencias de Arequipa");
     resize(1280, 800);
+
+    auto* mapaLayout = new QVBoxLayout(ui->mapaContainer);
+    mapaLayout->setContentsMargins(0, 0, 0, 0);
+    mapaLayout->addWidget(m_mapaWidget);
+    m_mapaWidget->setUnidades(CentralDespacho::instancia().getUnidades());
 }
 
 void MainWindow::configurarConexiones() {

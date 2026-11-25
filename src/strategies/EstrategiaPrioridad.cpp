@@ -6,10 +6,25 @@ std::shared_ptr<Unidad> EstrategiaPrioridad::seleccionar(
     const std::vector<std::shared_ptr<Unidad>>& unidades,
     const Incidente& incidente)
 {
-    // TODO Sprint 2: devolver la primera unidad libre que coincida con el tipo de incidente
-    // Si ninguna coincide, devolver cualquier unidad libre
-    for (auto& u : unidades) {
-        if (u->estaLibre()) return u;
+    const char* tipoPreferido = "";
+    switch (incidente.getTipo()) {
+        case TipoIncidente::URGENCIA_MEDICA:
+            tipoPreferido = "Ambulancia";
+            break;
+        case TipoIncidente::INCENDIO:
+        case TipoIncidente::ACCIDENTE:
+            tipoPreferido = "Bombero";
+            break;
+        case TipoIncidente::ROBO:
+            tipoPreferido = "Serenazgo";
+            break;
     }
-    return nullptr;
+
+    std::shared_ptr<Unidad> primeraLibre;
+    for (const auto& unidad : unidades) {
+        if (!unidad || !unidad->estaLibre()) continue;
+        if (unidad->getTipoUnidad() == tipoPreferido) return unidad;
+        if (!primeraLibre) primeraLibre = unidad;
+    }
+    return primeraLibre;
 }
