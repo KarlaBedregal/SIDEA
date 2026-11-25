@@ -24,6 +24,8 @@ set(TEST_SOURCES
     test_estrategias.cpp
     test_threading.cpp
     test_observer.cpp
+    test_estados.cpp
+    test_productor_consumidor.cpp
 )
 
 add_executable(SIDEA_tests ${TEST_SOURCES})

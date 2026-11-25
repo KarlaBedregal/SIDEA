@@ -135,7 +135,7 @@ TEST_F(EstrategiaTest, IntegracionCentralDespachoConEstrategiaMasCercana) {
     central.procesarCola();
 
     EXPECT_EQ(central.totalIncidentesPendientes(), 0);
-    EXPECT_EQ(central.totalIncidentesAtendidos(), 1);
+    EXPECT_EQ(central.totalIncidentesAtendidos(), 0);
 
     // La unidad más cercana debe haber recibido el incidente asignado
     EXPECT_NE(ambCercana->getIncidenteAsignado(), nullptr);
@@ -143,6 +143,10 @@ TEST_F(EstrategiaTest, IntegracionCentralDespachoConEstrategiaMasCercana) {
 
     // La unidad lejana no debe haber sido asignada
     EXPECT_EQ(ambLejana->getIncidenteAsignado(), nullptr);
+
+    for (int i = 0; i < 30 && !ambCercana->estaLibre(); ++i) ambCercana->tick();
+    EXPECT_TRUE(incCentro->estaAtendido());
+    EXPECT_EQ(central.totalIncidentesAtendidos(), 1);
 
     central.reiniciar();
 }
