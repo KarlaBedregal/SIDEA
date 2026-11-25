@@ -2,9 +2,20 @@
 #include "core/CentralDespacho.h"
 #include "core/IncidenteFactory.h"
 #include <chrono>
+#include "graph/MapaArequipa.h"
+#include <algorithm>
+#include <stdexcept>
 
-GeneradorIncidentes::GeneradorIncidentes(CentralDespacho& central, int intervaloMs, int nodoMax)
-    : m_central(central), m_intervaloMs(intervaloMs), m_nodoMax(nodoMax) {}
+GeneradorIncidentes::GeneradorIncidentes(CentralDespacho& central, int intervaloMs,
+                                       int nodoMax, int limiteIncidentes)
+    : m_central(central), m_intervaloMs(intervaloMs), m_nodoMax(nodoMax),
+      m_limiteIncidentes(limiteIncidentes) {
+    if (intervaloMs <= 0 || nodoMax < 0 || limiteIncidentes < 0)
+        throw std::invalid_argument("Parámetros no válidos para el generador");
+    // nodoMax es inclusivo, como en la fábrica; limitarlo a las zonas reales.
+    static const MapaArequipa mapa;
+    m_nodoMax = std::min(nodoMax, mapa.totalNodos() - 1);
+}
 
 GeneradorIncidentes::~GeneradorIncidentes() { detener(); }
 
@@ -65,4 +76,5 @@ void GeneradorIncidentes::bucleGeneracion() {
         m_central.recibirIncidente(inc);
         lock.lock();
     }
+    m_activo = false;
 }

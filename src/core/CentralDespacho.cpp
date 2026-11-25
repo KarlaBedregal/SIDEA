@@ -5,6 +5,9 @@
 #include "graph/MapaArequipa.h"
 #include "threading/SimuladorThread.h"
 #include <algorithm>
+#include <stdexcept>
+
+CentralDespacho::~CentralDespacho() { detener(); }
 
 // Patrón Singleton (Meyers' Singleton):
 // La instancia estática local se inicializa de forma lazy y thread-safe (garantizado desde C++11)
@@ -15,67 +18,106 @@ CentralDespacho& CentralDespacho::instancia() {
 }
 
 void CentralDespacho::registrarUnidad(std::shared_ptr<Unidad> unidad) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_unidades.push_back(std::move(unidad));
+    if (!unidad) throw std::invalid_argument("La unidad no puede ser nula");
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        for (const auto& registrada : m_unidades) {
+            if (registrada == unidad || registrada->getId() == unidad->getId())
+                throw std::invalid_argument("La unidad ya está registrada");
+        }
+        if (m_activa) {
+            auto sim = std::make_unique<SimuladorThread>(unidad, *m_mapa, m_tickMs);
+            sim->iniciar();
+            m_hilos.push_back(std::move(sim));
+        }
+        m_unidades.push_back(std::move(unidad));
+        ++m_revision;
+    }
+    m_cv.notify_one();
 }
 
 void CentralDespacho::recibirIncidente(std::shared_ptr<Incidente> incidente) {
+    static const MapaArequipa mapa;
+    if (!incidente || !mapa.grafo().existeNodo(incidente->getNodoUbicacion()) ||
+        static_cast<int>(incidente->getPrioridad()) < 1 ||
+        static_cast<int>(incidente->getPrioridad()) > 4 ||
+        static_cast<int>(incidente->getTipo()) < 0 ||
+        static_cast<int>(incidente->getTipo()) > 3)
+        throw std::invalid_argument("Incidente no válido para el mapa");
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_cola.push_back(std::move(incidente));
+        ++m_revision;
     }
     m_cv.notify_one();
     notificar("incidente_recibido");
 }
 
 void CentralDespacho::setEstrategia(std::unique_ptr<EstrategiaDespacho> estrategia) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_estrategia = std::move(estrategia);
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_estrategia = std::move(estrategia);
+        ++m_revision;
+    }
+    m_cv.notify_one();
 }
 
 void CentralDespacho::procesarCola() {
+    despacharUno();
+}
+
+bool CentralDespacho::despacharUno() {
     std::shared_ptr<Unidad> unidadAsignada;
     {
         std::lock_guard<std::mutex> lock(m_mutex);
-        if (m_cola.empty()) return;
-
-        // Extraer el incidente con mayor prioridad (CRITICA > ALTA > MEDIA > BAJA)
-        // std::max_element conserva el orden de llegada (FIFO) ante prioridades iguales
-        auto itMayorPrioridad = std::max_element(
-            m_cola.begin(), m_cola.end(),
-            [](const std::shared_ptr<Incidente>& a, const std::shared_ptr<Incidente>& b) {
-                if (!a) return true;
-                if (!b) return false;
-                return static_cast<int>(a->getPrioridad()) < static_cast<int>(b->getPrioridad());
+        // Mantener FIFO para prioridades iguales. Un caso sin recurso compatible
+        // espera en la cola sin impedir atender casos que sí tengan recurso.
+        auto ordenados = m_cola;
+        std::stable_sort(ordenados.begin(), ordenados.end(),
+            [](const auto& a, const auto& b) {
+                return static_cast<int>(a->getPrioridad()) > static_cast<int>(b->getPrioridad());
+            });
+        for (const auto& incidente : ordenados) {
+            std::vector<std::shared_ptr<Unidad>> disponibles;
+            for (const auto& unidad : m_unidades) {
+                if (unidad->estaLibre() && unidad->puedeAtender(*incidente))
+                    disponibles.push_back(unidad);
             }
-        );
-
-        if (itMayorPrioridad == m_cola.end() || !(*itMayorPrioridad)) return;
-
-        auto incidente = *itMayorPrioridad;
-
-        // Buscar una unidad disponible utilizando la estrategia configurada o la primera libre
-        std::shared_ptr<Unidad> unidad;
-        if (m_estrategia) {
-            unidad = m_estrategia->seleccionar(m_unidades, *incidente);
-        } else {
-            for (const auto& u : m_unidades) {
-                if (u && u->estaLibre()) { unidad = u; break; }
-            }
-        }
-
-        if (unidad) {
-            unidad->asignarIncidente(incidente);
-            m_cola.erase(itMayorPrioridad);
-            m_atendidos++;
-            unidadAsignada = unidad;
+            if (disponibles.empty()) continue;
+            auto unidad = m_estrategia ? m_estrategia->seleccionar(disponibles, *incidente)
+                                      : disponibles.front();
+            if (!unidad || std::find(disponibles.begin(), disponibles.end(), unidad) == disponibles.end())
+                continue;
+            if (!unidad->asignarIncidente(incidente)) continue;
+            m_cola.erase(std::find(m_cola.begin(), m_cola.end(), incidente));
+            unidadAsignada = std::move(unidad);
+            break;
         }
     }
     // Notificar fuera del lock para no bloquear a los observadores
     if (unidadAsignada) notificar("unidad_asignada");
+    return static_cast<bool>(unidadAsignada);
+}
+
+void CentralDespacho::bucleConsumo() {
+    std::unique_lock<std::mutex> lock(m_mutex);
+    std::uint64_t revisionProcesada = 0;
+    while (m_activa) {
+        m_cv.wait(lock, [&] {
+            return !m_activa || (!m_cola.empty() && m_revision != revisionProcesada);
+        });
+        if (!m_activa) break;
+        const auto revision = m_revision;
+        lock.unlock();
+        while (m_activa && despacharUno()) {}
+        lock.lock();
+        // Si llegó otro evento durante el despacho, se procesará antes de esperar.
+        revisionProcesada = revision;
+    }
 }
 
 void CentralDespacho::iniciar() {
+    std::lock_guard<std::mutex> ciclo(m_cicloMutex);
     std::lock_guard<std::mutex> lock(m_mutex);
     if (m_activa) return;
     m_activa = true;
@@ -87,31 +129,46 @@ void CentralDespacho::iniciar() {
         sim->iniciar();
         m_hilos.push_back(std::move(sim));
     }
+    m_consumidor = std::thread(&CentralDespacho::bucleConsumo, this);
 }
 
 void CentralDespacho::detener() {
+    std::lock_guard<std::mutex> ciclo(m_cicloMutex);
+    detenerHilos();
+}
+
+void CentralDespacho::detenerHilos() {
+    std::vector<std::unique_ptr<SimuladorThread>> hilos;
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_activa = false;
+        hilos.swap(m_hilos);
     }
     m_cv.notify_all();
-    for (auto& h : m_hilos) {
+    if (m_consumidor.joinable()) m_consumidor.join();
+    for (auto& h : hilos) {
         if (h) h->detener();
     }
-    m_hilos.clear();
 }
 
 void CentralDespacho::setTickMs(int ms) {
+    if (ms <= 0) throw std::invalid_argument("El tick debe ser positivo");
     std::lock_guard<std::mutex> lock(m_mutex);
     m_tickMs = ms;
 }
 
 // Llamado por EstadoRegresando::manejar() cuando la unidad llega a su nodo base (#7)
 void CentralDespacho::notificarUnidadLibre() {
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        ++m_revision;
+    }
+    m_cv.notify_one();
     notificar("unidad_libre");
 }
 
-const std::vector<std::shared_ptr<Unidad>>& CentralDespacho::getUnidades() const {
+std::vector<std::shared_ptr<Unidad>> CentralDespacho::getUnidades() const {
+    std::lock_guard<std::mutex> lock(m_mutex);
     return m_unidades;
 }
 
@@ -120,4 +177,18 @@ int CentralDespacho::totalIncidentesPendientes() const {
     return static_cast<int>(m_cola.size());
 }
 
-int CentralDespacho::totalIncidentesAtendidos() const { return m_atendidos; }
+void CentralDespacho::reiniciar() {
+    std::lock_guard<std::mutex> ciclo(m_cicloMutex);
+    detenerHilos();
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_unidades.clear();
+    m_cola.clear();
+    m_estrategia.reset();
+}
+
+int CentralDespacho::totalIncidentesAtendidos() const {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    int atendidos = 0;
+    for (const auto& unidad : m_unidades) atendidos += unidad->getIncidentesAtendidos();
+    return atendidos;
+}

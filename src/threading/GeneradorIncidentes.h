@@ -11,7 +11,8 @@ class GeneradorIncidentes {
 public:
     explicit GeneradorIncidentes(CentralDespacho& central,
                                   int intervaloMs = 2000,
-                                  int nodoMax = 25);
+                                  int nodoMax = 19,
+                                  int limiteIncidentes = 0);
     ~GeneradorIncidentes();
 
     void iniciar();
@@ -27,6 +28,7 @@ private:
     CentralDespacho& m_central;
     int m_intervaloMs;
     int m_nodoMax;
+    int m_limiteIncidentes;
     std::thread m_hilo;
     std::atomic<bool> m_activo{false};
     std::atomic<bool> m_pausado{false};
