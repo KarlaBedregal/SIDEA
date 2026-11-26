@@ -50,6 +50,11 @@ void MapaWidget::setIncidentes(const std::vector<std::shared_ptr<Incidente>>& in
     m_incidentes = incidentes;
 }
 
+void MapaWidget::setZonasRiesgo(const std::vector<PrediccionZona>& zonas) {
+    m_zonasRiesgo = zonas;
+    actualizar();
+}
+
 void MapaWidget::actualizar() { update(); }
 
 void MapaWidget::paintEvent(QPaintEvent*) {
@@ -140,6 +145,16 @@ void MapaWidget::dibujarGrafo(QPainter& p) {
         }
     }
 
+    for (std::size_t i = 0; i < m_zonasRiesgo.size(); ++i) {
+        const QPointF centro = nodoAPixel(m_zonasRiesgo[i].nodo);
+        const qreal radio = 13.0 + static_cast<qreal>(m_zonasRiesgo.size() - i);
+        QColor color("#D84343");
+        color.setAlpha(70);
+        p.setPen(QPen(QColor("#B83232"), 2.0));
+        p.setBrush(color);
+        p.drawEllipse(centro, radio, radio);
+    }
+
     p.setFont(QFont(QStringLiteral("Sans Serif"), 8));
     const QFontMetricsF metricas(p.font());
     const QRectF limites(contentsRect());
@@ -150,8 +165,12 @@ void MapaWidget::dibujarGrafo(QPainter& p) {
         const auto posicion = m_mapa.posicion(id);
 
         const bool sobrevolado = id == m_nodoSobrevolado;
-        p.setPen(QPen(sobrevolado ? QColor("#A65B00") : QColor("#17324D"), 1.5));
-        p.setBrush(sobrevolado ? QColor("#FFD27A") : QColor("#E7F1FA"));
+        const bool zonaRiesgo = std::any_of(m_zonasRiesgo.begin(), m_zonasRiesgo.end(),
+            [id](const PrediccionZona& zona) { return zona.nodo == id; });
+        p.setPen(QPen(sobrevolado ? QColor("#A65B00") :
+                      (zonaRiesgo ? QColor("#B83232") : QColor("#17324D")), 1.5));
+        p.setBrush(sobrevolado ? QColor("#FFD27A") :
+                   (zonaRiesgo ? QColor("#FFE0E0") : QColor("#E7F1FA")));
         p.drawEllipse(centro, sobrevolado ? radio + 2.0 : radio,
                       sobrevolado ? radio + 2.0 : radio);
 
@@ -172,6 +191,14 @@ void MapaWidget::dibujarGrafo(QPainter& p) {
         p.setBrush(Qt::NoBrush);
         p.drawText(QRectF(x, y, anchoTexto + 2.0, altoTexto),
                    Qt::AlignLeft | Qt::AlignVCenter, nombre);
+    }
+
+    if (!m_zonasRiesgo.empty()) {
+        p.setPen(QColor("#8F2525"));
+        p.setBrush(Qt::NoBrush);
+        p.drawText(QRectF(limites.left() + 8.0, limites.top() + 6.0, 250.0, 20.0),
+                   Qt::AlignLeft | Qt::AlignVCenter,
+                   QStringLiteral("Zonas de mayor riesgo (historial reciente)"));
     }
 }
 

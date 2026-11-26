@@ -2,6 +2,7 @@
 #include "EstadoRegresando.h"
 #include "core/Unidad.h"
 #include "core/Incidente.h"
+#include "core/CentralDespacho.h"
 #include <stdexcept>
 
 void EstadoAtendiendo::manejar(Unidad& unidad) {
@@ -11,5 +12,6 @@ void EstadoAtendiendo::manejar(Unidad& unidad) {
         throw std::logic_error("No existe ruta de regreso a la base");
     unidad.atenderIncidente(*unidad.m_incidenteActual);
     unidad.m_incidenteActual->marcarAtendido();
+    CentralDespacho::instancia().registrarIncidenteAtendido(*unidad.m_incidenteActual);
     unidad.cambiarEstado(std::make_unique<EstadoRegresando>());
 }

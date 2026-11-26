@@ -9,6 +9,7 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QSplitter>
+#include <QDateTime>
 
 // Adapter: recibe actualizar() desde cualquier hilo y lo encola al hilo Qt
 class MainWindowObserver : public IObserver {
@@ -51,6 +52,8 @@ void MainWindow::configurarUI() {
     mapaLayout->setContentsMargins(0, 0, 0, 0);
     mapaLayout->addWidget(m_mapaWidget);
     m_mapaWidget->setUnidades(CentralDespacho::instancia().getUnidades());
+    m_mapaWidget->setZonasRiesgo(CentralDespacho::instancia().zonasDeMayorRiesgo(
+        3, QDateTime::currentDateTimeUtc().time().hour()));
 }
 
 void MainWindow::configurarConexiones() {
@@ -61,6 +64,8 @@ void MainWindow::onEventoDespacho(QString evento) {
     // Corre en el hilo Qt — seguro llamar widgets aquí
     if (m_mapaWidget) {
         m_mapaWidget->setUnidades(CentralDespacho::instancia().getUnidades());
+        m_mapaWidget->setZonasRiesgo(CentralDespacho::instancia().zonasDeMayorRiesgo(
+            3, QDateTime::currentDateTimeUtc().time().hour()));
         m_mapaWidget->actualizar();
     }
     (void)evento;

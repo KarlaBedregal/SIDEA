@@ -21,14 +21,20 @@ PrediccionZona ModeloPrediccion::zonaMasRiesgosa(int horaActual) const {
     return top[0];
 }
 
+std::vector<PrediccionZona> ModeloPrediccion::zonasDeMayorRiesgo(int horaActual) const {
+    return topZonas(3, horaActual);
+}
+
 std::vector<PrediccionZona> ModeloPrediccion::topZonas(int n, int horaActual) const {
     std::vector<PrediccionZona> resultado;
     for (int nodo : m_mapa.grafo().nodos()) {
-        resultado.push_back({nodo, calcularProbabilidad(nodo, horaActual)});
+        const int frecuencia = m_historial.frecuenciaPorZona(nodo);
+        if (frecuencia > 0) resultado.push_back({nodo, calcularProbabilidad(nodo, horaActual)});
     }
     std::sort(resultado.begin(), resultado.end(),
               [](const PrediccionZona& a, const PrediccionZona& b) {
-                  return a.probabilidad > b.probabilidad;
+                  if (a.probabilidad != b.probabilidad) return a.probabilidad > b.probabilidad;
+                  return a.nodo < b.nodo;
               });
     if (n > 0 && static_cast<int>(resultado.size()) > n)
         resultado.resize(n);
@@ -36,5 +42,5 @@ std::vector<PrediccionZona> ModeloPrediccion::topZonas(int n, int horaActual) co
 }
 
 void ModeloPrediccion::actualizar() {
-    // El modelo recalcula dinámicamente en cada llamada a topZonas().
+    // El modelo consulta el historial vigente en cada llamada a topZonas().
 }
