@@ -26,6 +26,8 @@ private slots:
     void onIniciarSimulacion();
     void onPausarSimulacion();
     void onDetenerSimulacion();
+    void onGestionarUnidades();
+    void onCantidadTipoCambiada(int tipoIndex, int nuevaCantidad);
     void onEstrategiaChanged(int index);
     void onTickSimulacion();
     void onEventoDespacho(QString evento);
@@ -34,6 +36,7 @@ private:
     void configurarUI();
     void configurarConexiones();
     void inicializarEscenario();
+    void sincronizarConteoUnidades();
     void actualizarVista();
 
     Ui::MainWindow* ui;

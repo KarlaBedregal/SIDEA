@@ -15,6 +15,7 @@ public:
     int estrategiaSeleccionada() const;
     int velocidadSimulacion() const;
 
+    void setConteoUnidades(int ambulancias, int bomberos, int serenazgos);
     void marcarIniciado();
     void marcarPausado();
     void marcarDetenido();
@@ -26,6 +27,8 @@ signals:
     void estrategiaChanged(int index);
     void reubicacionChanged(bool activa);
     void reiniciarPresionado();
+    void gestionarUnidadesPresionado();
+    void cantidadTipoCambiada(int tipoIndex, int nuevaCantidad);
 
 private:
     void configurarUI();
@@ -34,8 +37,12 @@ private:
     QPushButton* m_btnPausar = nullptr;
     QPushButton* m_btnDetener = nullptr;
     QPushButton* m_btnNuevo = nullptr;
+    QPushButton* m_btnGestionarUnidades = nullptr;
     QComboBox* m_cbEstrategia = nullptr;
     QSpinBox* m_sbVelocidad = nullptr;
+    QSpinBox* m_sbAmbulancias = nullptr;
+    QSpinBox* m_sbBomberos = nullptr;
+    QSpinBox* m_sbSerenazgos = nullptr;
     QLabel* m_lblEstado = nullptr;
     QCheckBox* m_cbPrediccion = nullptr;
 };

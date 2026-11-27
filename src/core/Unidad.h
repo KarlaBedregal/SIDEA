@@ -30,6 +30,8 @@ public:
     std::string getEstadoNombre() const;
     int getIncidentesAtendidos() const;
     double getTiempoOcupado() const;
+    std::shared_ptr<Incidente> getIncidenteActual() const;
+    std::vector<int> getRuta() const;
     bool puedeAtender(const Incidente& inc) const;
 
     void setRuta(std::vector<int> ruta);

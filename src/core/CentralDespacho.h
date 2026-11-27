@@ -35,6 +35,7 @@ public:
     CentralDespacho& operator=(const CentralDespacho&) = delete;
 
     void registrarUnidad(std::shared_ptr<Unidad> unidad);
+    bool eliminarUnidad(int id);
     void recibirIncidente(std::shared_ptr<Incidente> incidente);
     void setEstrategia(std::unique_ptr<EstrategiaDespacho> estrategia);
     void procesarCola();

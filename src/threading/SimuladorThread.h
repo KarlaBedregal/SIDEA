@@ -21,6 +21,7 @@ public:
     void detener();
     bool estaActivo() const;
     bool estaPausado() const;
+    const std::shared_ptr<Unidad>& unidad() const;
 
 private:
     void bucleSimulacion();

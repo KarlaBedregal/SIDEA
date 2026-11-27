@@ -57,7 +57,11 @@ void HistorialIncidentes::exportarCSV(const std::string& ruta) const {
     for (const auto& r : registros) {
         const auto tiempo = std::chrono::system_clock::to_time_t(r.timestamp);
         std::tm utc{};
+#ifdef _WIN32
+        gmtime_s(&utc, &tiempo);
+#else
         gmtime_r(&tiempo, &utc);
+#endif
         f << std::put_time(&utc, "%Y-%m-%dT%H:%M:%SZ") << ','
           << r.nodo << ',' << static_cast<int>(r.tipo) << ',' << r.hora << '\n';
     }
