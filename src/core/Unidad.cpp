@@ -88,6 +88,16 @@ std::string Unidad::getEstadoNombre() const {
     return m_estado ? m_estado->nombre() : "Sin estado";
 }
 
+std::vector<int> Unidad::getRuta() const {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+    return m_ruta;
+}
+
+std::shared_ptr<Incidente> Unidad::getIncidenteActual() const {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+    return m_incidenteActual;
+}
+
 void Unidad::setRuta(std::vector<int> ruta) {
     std::lock_guard<std::recursive_mutex> lock(m_mutex);
     m_ruta = std::move(ruta);

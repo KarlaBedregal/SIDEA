@@ -48,6 +48,7 @@ void SimuladorThread::detener() {
 
 bool SimuladorThread::estaActivo() const { return m_activo; }
 bool SimuladorThread::estaPausado() const { return m_pausado; }
+const std::shared_ptr<Unidad>& SimuladorThread::unidad() const { return m_unidad; }
 
 void SimuladorThread::bucleSimulacion() {
     std::unique_lock<std::mutex> lock(m_mutex);

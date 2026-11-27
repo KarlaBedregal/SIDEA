@@ -10,6 +10,9 @@ struct DatosVia {
 struct PosicionNodo {
     float x, y;
     std::string zona;
+    std::string direccion = "";
+    double latitud = 0.0;
+    double longitud = 0.0;
 };
 
 class MapaArequipa {
@@ -19,6 +22,7 @@ public:
     const Grafo<DatosVia>& grafo() const;
     PosicionNodo posicion(int nodo) const;
     std::string nombreZona(int nodo) const;
+    std::string direccion(int nodo) const;
     int totalNodos() const;
 
 private:

@@ -47,6 +47,45 @@ void CentralDespacho::registrarUnidad(std::shared_ptr<Unidad> unidad) {
     m_cv.notify_one();
 }
 
+bool CentralDespacho::eliminarUnidad(int id) {
+    std::lock_guard<std::mutex> ciclo(m_cicloMutex);
+    std::unique_ptr<SimuladorThread> hiloEliminado;
+    bool eliminada = false;
+
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        auto it = std::find_if(m_unidades.begin(), m_unidades.end(),
+            [id](const std::shared_ptr<Unidad>& u) { return u && u->getId() == id; });
+        if (it == m_unidades.end()) return false;
+
+        auto inc = (*it)->getIncidenteActual();
+        if (inc && !inc->estaAtendido()) {
+            const bool yaEnCola = std::any_of(m_cola.begin(), m_cola.end(),
+                [&](const auto& c) { return c && c->getId() == inc->getId(); });
+            if (!yaEnCola) m_cola.push_back(inc);
+        }
+
+        for (auto hit = m_hilos.begin(); hit != m_hilos.end(); ++hit) {
+            if (*hit && (*hit)->unidad() && (*hit)->unidad()->getId() == id) {
+                hiloEliminado = std::move(*hit);
+                m_hilos.erase(hit);
+                break;
+            }
+        }
+
+        m_unidades.erase(it);
+        ++m_revision;
+        eliminada = true;
+    }
+
+    if (hiloEliminado) hiloEliminado->detener();
+    if (eliminada) {
+        m_cv.notify_one();
+        notificar("unidad_libre");
+    }
+    return eliminada;
+}
+
 void CentralDespacho::recibirIncidente(std::shared_ptr<Incidente> incidente) {
     static const MapaArequipa mapa;
     if (!incidente || !mapa.grafo().existeNodo(incidente->getNodoUbicacion()) ||
@@ -269,7 +308,11 @@ std::vector<std::shared_ptr<Incidente>> CentralDespacho::getIncidentesPendientes
 void CentralDespacho::registrarIncidenteAtendido(const Incidente& incidente) {
     const auto ahora = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     std::tm horaUtc{};
+#ifdef _WIN32
+    gmtime_s(&horaUtc, &ahora);
+#else
     gmtime_r(&ahora, &horaUtc);
+#endif
     m_historial.registrar(incidente.getNodoUbicacion(), incidente.getTipo(), horaUtc.tm_hour);
     notificar("incidente_atendido");
 }

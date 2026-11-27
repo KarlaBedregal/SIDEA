@@ -1,7 +1,9 @@
 #include "PanelControl.h"
 #include <QCheckBox>
+#include <QGridLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QSignalBlocker>
 #include <QVBoxLayout>
 
 PanelControl::PanelControl(QWidget* parent) : QWidget(parent) {
@@ -12,7 +14,7 @@ PanelControl::PanelControl(QWidget* parent) : QWidget(parent) {
 void PanelControl::configurarUI() {
     auto* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(8, 8, 8, 8);
-    mainLayout->setSpacing(12);
+    mainLayout->setSpacing(10);
 
     auto* gbSimulacion = new QGroupBox("Control de Simulación", this);
     auto* simLayout = new QVBoxLayout(gbSimulacion);
@@ -23,6 +25,7 @@ void PanelControl::configurarUI() {
     auto* velLayout = new QHBoxLayout();
     velLayout->addWidget(new QLabel("Velocidad:", this));
     m_sbVelocidad = new QSpinBox(this);
+    m_sbVelocidad->setObjectName("velocidadSimulacion");
     m_sbVelocidad->setRange(100, 5000);
     m_sbVelocidad->setSingleStep(100);
     m_sbVelocidad->setValue(500);
@@ -57,6 +60,40 @@ void PanelControl::configurarUI() {
     simLayout->addLayout(btnLayout);
     simLayout->addWidget(m_btnNuevo);
 
+    auto* gbFlota = new QGroupBox("Flota de Unidades", this);
+    auto* flotaLayout = new QVBoxLayout(gbFlota);
+    flotaLayout->setSpacing(6);
+
+    auto* gridFlota = new QGridLayout();
+    auto crearSpin = [this](const char* objName, int inicial) {
+        auto* sb = new QSpinBox(this);
+        sb->setObjectName(objName);
+        sb->setRange(0, 15);
+        sb->setValue(inicial);
+        sb->setAlignment(Qt::AlignCenter);
+        return sb;
+    };
+
+    m_sbAmbulancias = crearSpin("cantidadAmbulancias", 3);
+    m_sbBomberos    = crearSpin("cantidadBomberos", 2);
+    m_sbSerenazgos  = crearSpin("cantidadSerenazgos", 3);
+
+    gridFlota->addWidget(new QLabel("Ambulancias:", this), 0, 0);
+    gridFlota->addWidget(m_sbAmbulancias, 0, 1);
+    gridFlota->addWidget(new QLabel("Bomberos:", this), 1, 0);
+    gridFlota->addWidget(m_sbBomberos, 1, 1);
+    gridFlota->addWidget(new QLabel("Serenazgo:", this), 2, 0);
+    gridFlota->addWidget(m_sbSerenazgos, 2, 1);
+
+    m_btnGestionarUnidades = new QPushButton("Editar / personalizar unidades...", this);
+    m_btnGestionarUnidades->setObjectName("gestionarUnidades");
+    m_btnGestionarUnidades->setStyleSheet(
+        "QPushButton{background:#E2E8F0;color:#0F172A;font-weight:bold;padding:5px;border:1px solid #CBD5E1;border-radius:4px;}"
+        "QPushButton:hover{background:#E0F2FE;border-color:#0284C7;color:#0369A1;}");
+
+    flotaLayout->addLayout(gridFlota);
+    flotaLayout->addWidget(m_btnGestionarUnidades);
+
     auto* gbEstrategia = new QGroupBox("Estrategia de Despacho", this);
     auto* estLayout = new QVBoxLayout(gbEstrategia);
     m_cbEstrategia = new QComboBox(this);
@@ -66,12 +103,11 @@ void PanelControl::configurarUI() {
     m_cbEstrategia->addItem("Balance de Carga");
     estLayout->addWidget(m_cbEstrategia);
 
-    m_sbVelocidad->setObjectName("velocidadSimulacion");
-
     m_cbPrediccion = new QCheckBox("Reubicación preventiva", this);
     m_cbPrediccion->setObjectName("reubicacionPreventiva");
 
     mainLayout->addWidget(gbSimulacion);
+    mainLayout->addWidget(gbFlota);
     mainLayout->addWidget(gbEstrategia);
     mainLayout->addWidget(m_cbPrediccion);
     mainLayout->addStretch();
@@ -80,9 +116,26 @@ void PanelControl::configurarUI() {
     connect(m_btnPausar,  &QPushButton::clicked, this, &PanelControl::pausarPresionado);
     connect(m_btnDetener, &QPushButton::clicked, this, &PanelControl::detenerPresionado);
     connect(m_btnNuevo,   &QPushButton::clicked, this, &PanelControl::reiniciarPresionado);
+    connect(m_btnGestionarUnidades, &QPushButton::clicked, this, &PanelControl::gestionarUnidadesPresionado);
     connect(m_cbEstrategia, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &PanelControl::estrategiaChanged);
     connect(m_cbPrediccion, &QCheckBox::toggled, this, &PanelControl::reubicacionChanged);
+
+    connect(m_sbAmbulancias, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int v) { emit cantidadTipoCambiada(0, v); });
+    connect(m_sbBomberos, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int v) { emit cantidadTipoCambiada(1, v); });
+    connect(m_sbSerenazgos, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int v) { emit cantidadTipoCambiada(2, v); });
+}
+
+void PanelControl::setConteoUnidades(int ambulancias, int bomberos, int serenazgos) {
+    const QSignalBlocker b1(m_sbAmbulancias);
+    const QSignalBlocker b2(m_sbBomberos);
+    const QSignalBlocker b3(m_sbSerenazgos);
+    if (m_sbAmbulancias) m_sbAmbulancias->setValue(ambulancias);
+    if (m_sbBomberos) m_sbBomberos->setValue(bomberos);
+    if (m_sbSerenazgos) m_sbSerenazgos->setValue(serenazgos);
 }
 
 void PanelControl::marcarIniciado() {

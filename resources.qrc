@@ -9,4 +9,7 @@
         <file alias="robo.png">assets/icons/robo.png</file>
         <file alias="urgencia_medica.png">assets/icons/urgencia_medica.png</file>
     </qresource>
+    <qresource prefix="/map">
+        <file alias="mapa_arequipa.png">assets/mapa_arequipa.png</file>
+    </qresource>
 </RCC>
