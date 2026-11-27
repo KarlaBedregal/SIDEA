@@ -14,6 +14,7 @@ public:
     ModeloPrediccion(const HistorialIncidentes& historial, const MapaArequipa& mapa);
 
     PrediccionZona zonaMasRiesgosa(int horaActual) const;
+    std::vector<PrediccionZona> zonasDeMayorRiesgo(int horaActual) const;
     std::vector<PrediccionZona> topZonas(int n, int horaActual) const;
     void actualizar();
 

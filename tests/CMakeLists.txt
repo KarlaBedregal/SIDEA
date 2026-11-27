@@ -26,6 +26,7 @@ set(TEST_SOURCES
     test_observer.cpp
     test_estados.cpp
     test_productor_consumidor.cpp
+    test_reubicacion.cpp
 )
 
 add_executable(SIDEA_tests ${TEST_SOURCES})
@@ -40,3 +41,8 @@ target_include_directories(SIDEA_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
 
 include(GoogleTest)
 gtest_discover_tests(SIDEA_tests)
+
+add_executable(SIDEA_gui_tests test_gui.cpp)
+target_link_libraries(SIDEA_gui_tests PRIVATE GTest::gtest sidea_core)
+add_test(NAME SIDEA_gui_tests COMMAND SIDEA_gui_tests)
+set_tests_properties(SIDEA_gui_tests PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 30)

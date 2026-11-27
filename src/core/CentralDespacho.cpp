@@ -4,10 +4,20 @@
 #include "strategies/EstrategiaDespacho.h"
 #include "graph/MapaArequipa.h"
 #include "threading/SimuladorThread.h"
+#include "prediction/ModeloPrediccion.h"
 #include <algorithm>
+#include <chrono>
+#include <iterator>
 #include <stdexcept>
 #include <chrono>
 #include <ctime>
+
+namespace {
+int horaActual() {
+    return static_cast<int>(std::chrono::duration_cast<std::chrono::hours>(
+        std::chrono::system_clock::now().time_since_epoch()).count() % 24);
+}
+}
 
 CentralDespacho::~CentralDespacho() { detener(); }
 
@@ -48,11 +58,17 @@ void CentralDespacho::recibirIncidente(std::shared_ptr<Incidente> incidente) {
         throw std::invalid_argument("Incidente no válido para el mapa");
     {
         std::lock_guard<std::mutex> lock(m_mutex);
+        if (incidente->estaAtendido() || std::any_of(m_registros.begin(), m_registros.end(),
+            [&](const auto& r) { return r.incidente->getId() == incidente->getId(); }))
+            throw std::invalid_argument("Incidente atendido o identificador duplicado");
+        m_historial.registrar(incidente->getNodoUbicacion(), incidente->getTipo(), horaActual());
+        m_registros.push_back({incidente, {}, false});
         m_cola.push_back(std::move(incidente));
         ++m_revision;
     }
     m_cv.notify_one();
     notificar("incidente_recibido");
+    reubicarUnidades();
 }
 
 void CentralDespacho::setEstrategia(std::unique_ptr<EstrategiaDespacho> estrategia) {
@@ -91,6 +107,13 @@ bool CentralDespacho::despacharUno() {
             if (!unidad || std::find(disponibles.begin(), disponibles.end(), unidad) == disponibles.end())
                 continue;
             if (!unidad->asignarIncidente(incidente)) continue;
+            for (auto& registro : m_registros) {
+                if (registro.incidente == incidente) {
+                    registro.estrategia = m_estrategia ? m_estrategia->nombre() : "Sin estrategia";
+                    registro.prediccion = m_reubicacionPreventiva;
+                    break;
+                }
+            }
             m_cola.erase(std::find(m_cola.begin(), m_cola.end(), incidente));
             unidadAsignada = std::move(unidad);
             break;
@@ -167,6 +190,71 @@ void CentralDespacho::notificarUnidadLibre() {
     }
     m_cv.notify_one();
     notificar("unidad_libre");
+    reubicarUnidades();
+}
+
+std::vector<std::shared_ptr<Incidente>> CentralDespacho::getIncidentesActivos() const {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    std::vector<std::shared_ptr<Incidente>> resultado;
+    for (const auto& r : m_registros)
+        if (!r.incidente->estaAtendido()) resultado.push_back(r.incidente);
+    return resultado;
+}
+
+void CentralDespacho::setReubicacionPreventiva(bool activa) {
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_reubicacionPreventiva = activa;
+        if (!activa)
+            for (const auto& unidad : m_unidades) unidad->cancelarReubicacion();
+    }
+    if (activa) reubicarUnidades();
+    notificar("prediccion_actualizada");
+}
+
+bool CentralDespacho::reubicacionPreventiva() const {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_reubicacionPreventiva;
+}
+
+void CentralDespacho::reubicarUnidades() {
+    static const MapaArequipa mapa;
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (!m_reubicacionPreventiva) return;
+    const auto zona = ModeloPrediccion(m_historial, mapa).zonaMasRiesgosa(horaActual());
+    if (zona.nodo < 0 || zona.probabilidad <= 0.0) return;
+    for (const auto& unidad : m_unidades) {
+        if (!unidad->estaLibre()) continue;
+        // El despacho compatible siempre tiene precedencia sobre la prevención.
+        const bool pendiente = std::any_of(m_cola.begin(), m_cola.end(),
+            [&](const auto& inc) { return unidad->puedeAtender(*inc); });
+        if (!pendiente) unidad->reubicar(zona.nodo);
+    }
+}
+
+std::vector<ResumenComparacion> CentralDespacho::comparacionPrediccion() const {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    std::vector<ResumenComparacion> resultado;
+    for (const auto& registro : m_registros) {
+        if (registro.estrategia.empty()) continue;
+        auto it = std::find_if(resultado.begin(), resultado.end(), [&](const auto& resumen) {
+            return resumen.estrategia == registro.estrategia && resumen.prediccion == registro.prediccion;
+        });
+        if (it == resultado.end()) {
+            resultado.push_back({registro.estrategia, registro.prediccion});
+            it = std::prev(resultado.end());
+        }
+        ++it->asignados;
+        if (registro.incidente->estaAtendido()) ++it->atendidos;
+        const double respuesta = registro.incidente->tiempoRespuesta();
+        if (respuesta >= 0.0) {
+            it->respuestaMediaSegundos += respuesta;
+            ++it->llegadas;
+        }
+    }
+    for (auto& resumen : resultado)
+        if (resumen.llegadas) resumen.respuestaMediaSegundos /= resumen.llegadas;
+    return resultado;
 }
 
 std::vector<std::shared_ptr<Unidad>> CentralDespacho::getUnidades() const {
@@ -202,6 +290,28 @@ int CentralDespacho::totalIncidentesPendientes() const {
     return static_cast<int>(m_cola.size());
 }
 
+void CentralDespacho::registrarIncidenteAtendido(const Incidente& incidente) {
+    const auto ahora = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    std::tm horaUtc{};
+#ifdef _WIN32
+    gmtime_s(&horaUtc, &ahora);
+#else
+    gmtime_r(&ahora, &horaUtc);
+#endif
+    m_historial.registrar(incidente.getNodoUbicacion(), incidente.getTipo(), horaUtc.tm_hour);
+    notificar("incidente_atendido");
+}
+
+std::vector<RegistroHistorial> CentralDespacho::getHistorialIncidentes() const {
+    return m_historial.todos();
+}
+
+std::vector<PrediccionZona> CentralDespacho::zonasDeMayorRiesgo(int cantidad, int horaActual) const {
+    static const MapaArequipa mapa;
+    const ModeloPrediccion modelo(m_historial, mapa);
+    return modelo.topZonas(cantidad, horaActual);
+}
+
 void CentralDespacho::reiniciar() {
     std::lock_guard<std::mutex> ciclo(m_cicloMutex);
     detenerHilos();
@@ -210,6 +320,9 @@ void CentralDespacho::reiniciar() {
     m_cola.clear();
     m_historial.limpiar();
     m_estrategia.reset();
+    m_registros.clear();
+    m_reubicacionPreventiva = false;
+    ++m_revision;
 }
 
 int CentralDespacho::totalIncidentesAtendidos() const {

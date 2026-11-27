@@ -5,6 +5,89 @@ Curso de Programación Orientada a Objetos — UNSA 2026-B.
 
 ---
 
+## Cómo usar
+
+1. Compila el ejecutable `SIDEA` siguiendo las instrucciones al final de este README y ejecútalo con `./build/SIDEA` (Windows: `.\build\SIDEA.exe`; con Visual Studio, usa la carpeta de la configuración elegida).
+2. El escenario inicial tiene ocho unidades en sus bases. Selecciona **Más Cercana**, **Prioridad** o **Balance de Carga** y la duración de un tick (100–5000 ms).
+3. Pulsa **Iniciar**. Se genera un incidente cada dos segundos. La central despacha unidades compatibles en hilos propios; el mapa se refresca e interpola el movimiento entre nodos.
+4. **Pausar** conserva las unidades, la cola y el historial. **Reanudar** continúa el ciclo; puedes cambiar la velocidad durante la pausa. **Detener** conserva también el escenario para poder inspeccionarlo y continuar con **Iniciar**. **Nuevo escenario** detiene los hilos y limpia incidentes, historial y métricas.
+5. Activa **Reubicación preventiva** para que las unidades libres recorran la ruta Dijkstra a la zona de mayor riesgo histórico. Sin historial no se mueven. El despacho de un incidente compatible tiene precedencia e interrumpe la reubicación. Desactivar el interruptor detiene el recorrido preventivo en el nodo actual. La base original se conserva y las unidades ocupadas completan su ciclo normal.
+6. Cambia la estrategia o el interruptor durante la ejecución. La tabla agrupa los despachos por **estrategia y predicción al momento de asignar**. **Exportar comparación CSV** guarda esos resultados; **Nuevo escenario** los borra.
+
+Los vehículos identifican ambulancias, bomberos y serenazgo; debajo aparece su ID. Los incidentes usan cruz roja (urgencia médica), llama naranja (incendio), triángulo amarillo (accidente) y escudo azul (robo). Se muestran tanto los pendientes en cola como los asignados, hasta completar su atención. Pasa el cursor sobre una zona para ver su nombre.
+
+### Capturas reales
+
+Widgets Qt del ejecutable `SIDEA_capturas`, con un escenario fijo de cuatro tipos de incidente:
+
+![Incidentes pendientes e íconos de las ocho unidades](docs/capturas/incidentes.png)
+
+Después de completar dos ciclos de demostración, uno por modo, se muestran los resultados y las unidades reubicadas:
+
+![Reubicación activada y comparación de resultados](docs/capturas/comparacion.png)
+
+Las capturas se generan avanzando el motor por ticks desde `examples/capturas.cpp`; sus tiempos de ejecución acelerada no son un benchmark. Para regenerarlas:
+
+```bash
+QT_QPA_PLATFORM=offscreen ./build/SIDEA_capturas docs/capturas
+```
+
+En Windows con Qt offscreen se puede pasar una fuente instalada explícitamente:
+
+```powershell
+$env:QT_QPA_PLATFORM = "offscreen"
+.\build\SIDEA_capturas.exe docs/capturas C:/Windows/Fonts/arial.ttf
+Remove-Item Env:QT_QPA_PLATFORM
+```
+
+### Comparación de estrategias y predicción
+
+| Estrategia | Selección entre unidades compatibles libres |
+|---|---|
+| Más cercana | Menor distancia ponderada al incidente, calculada por Dijkstra. |
+| Prioridad | Primera unidad del tipo preferido. La central ya ordena la cola por prioridad descendente y conserva FIFO en empates, para las tres estrategias. |
+| Balance de carga | Menor número de incidentes atendidos. |
+
+La tabla de la interfaz cuenta asignaciones, llegadas y atenciones. La media es el tiempo real en segundos desde la creación del incidente hasta que una unidad llega al nodo, incluida la espera en cola. Sin llegadas se muestra `—`; los casos aún en ruta no entran en la media. Las pausas también cuentan en ese reloj. Para una comparación controlada entre modos, usa el escenario reproducible siguiente.
+
+`SIDEA_comparar` reinicia completamente el escenario para cada combinación: ocho unidades en las mismas bases, 24 incidentes, uno cada 12 ticks; 18 en Cerro Colorado (nodo 3) y seis en Sachaca (nodo 10). Tipo y prioridad siguen la misma secuencia en las seis ejecuciones. La predicción aprende durante cada ejecución, sin historial precargado. La respuesta se mide en ticks globales, incluida la espera en cola, sin depender del rendimiento del equipo.
+
+| Estrategia | Predicción | Incidentes atendidos | Respuesta media (ticks) |
+|---|---|---:|---:|
+| Más cercana | No | 24/24 | 2.250 |
+| Más cercana | Sí | 24/24 | 2.000 |
+| Prioridad | No | 24/24 | 3.250 |
+| Prioridad | Sí | 24/24 | 2.042 |
+| Balance de carga | No | 24/24 | 3.083 |
+| Balance de carga | Sí | 24/24 | 2.042 |
+
+Resultados generados por `examples/comparar_prediccion.cpp`, disponibles en [CSV](docs/comparacion_prediccion.csv). Este escenario concentra la demanda y favorece la prevención; los resultados no garantizan una mejora para otras distribuciones. En la simulación existente cada arista se recorre en un tick; Dijkstra elige la ruta usando sus pesos.
+
+```bash
+./build/SIDEA_comparar > docs/comparacion_prediccion.csv
+```
+
+El modelo asigna un puntaje `0.6 × frecuenciaZona / total + 0.4 × frecuenciaZonaHora / total`, usando la hora UTC actual. Solo considera nodos válidos con puntaje positivo; los empates favorecen el menor ID de nodo. El historial pertenece a la central y se consulta bajo su mutex. La prevención envía las unidades libres a una misma zona de mayor riesgo, según el requisito del issue #18.
+
+### Diagramas UML
+
+Fuentes y versiones SVG generadas del sistema implementado:
+
+- [Clases](docs/UML/clases.puml) · [SVG](docs/UML/SIDEA_Clases.svg)
+- [Estados](docs/UML/estado_unidad.puml) · [SVG](docs/UML/Estado_Unidad.svg)
+- [Secuencia de despacho](docs/UML/secuencia_despacho.puml) · [SVG](docs/UML/Secuencia_Despacho.svg)
+
+Con Java y un JAR de PlantUML local:
+
+```bash
+java -jar plantuml.jar -charset UTF-8 -checkonly docs/UML/*.puml
+java -jar plantuml.jar -charset UTF-8 -tsvg docs/UML/*.puml
+```
+
+Los diagramas de clases y estados usan Smetana para evitar la dependencia externa de Graphviz. Los submodos de espera y reubicación pertenecen a `EstadoLibre`; no añaden un quinto estado al ciclo de atención.
+
+---
+
 ## Tareas por persona
 
 Cada integrante tiene issues asignados por sprint (sorteo). Búscalos en la pestaña [Issues](../../issues) filtrados por tu usuario.
@@ -142,12 +225,12 @@ Cada integrante tiene issues asignados por sprint (sorteo). Búscalos en la pest
 
 ### #14 — Íconos de incidentes y unidades · FernandoBarra05
 
-**Archivos:** `assets/icons/`, `src/gui/MapaWidget.cpp`, `resources.qrc`
+**Archivos:** `assets/icons/`, `src/gui/MapaWidget.cpp`, `src/gui/MainWindow.cpp`, `resources.qrc`, `CMakeLists.txt`
 
 **Tareas:**
-- Crear o añadir íconos SVG/PNG para: ambulancia, bombero, serenazgo, incendio, accidente, robo, urgencia médica
-- Registrar todos en `resources.qrc`
-- Renderizar el ícono correspondiente en el nodo del mapa cuando hay una unidad o incidente activo
+- Implementado: siete PNG RGBA de 32×32 y recursos Qt compilados con AUTORCC.
+- Implementado: incidentes pendientes/asignados visibles hasta completar atención y unidades con interpolación cada 16 ms.
+- Verificación: carga de los siete recursos, render de los cuatro tipos de incidente, ocultación al atender y movimiento interpolado.
 
 **Criterio de aceptación:** El proyecto compila con `resources.qrc`. Los íconos se ven en el mapa.
 
@@ -195,12 +278,12 @@ Cada integrante tiene issues asignados por sprint (sorteo). Búscalos en la pest
 
 ### #18 — Reubicación preventiva, diagramas UML y README · FernandoBarra05
 
-**Archivos:** `src/core/CentralDespacho.cpp`, `docs/UML/`, `README.md`
+**Archivos:** `src/core/`, `src/prediction/ModeloPrediccion.*`, `src/gui/`, `docs/UML/`, `README.md`
 
 **Tareas:**
-- Implementar `CentralDespacho::reubicarUnidades()`: mueve unidades libres a nodos de alta predicción
-- Actualizar los 3 diagramas PlantUML (clases, estados, secuencia) para reflejar el sistema final
-- Actualizar el README con instrucciones de uso del simulador y capturas de pantalla
+- Implementado: `CentralDespacho::reubicarUnidades()`, toggle en UI, recorrido preventivo interrumpible y comparación por estrategia/modo con exportación CSV.
+- Implementado: los tres diagramas PlantUML, sus SVG, instrucciones de uso, capturas reales y comparación reproducible de seis configuraciones.
+- Verificación: ruta por aristas, prioridad de atención, apagado del toggle, interrupción por despacho, reubicación al liberarse, concurrencia, limpieza y métricas por modo.
 
 **Criterio de aceptación:** UML refleja el sistema real. README tiene sección "Cómo usar" con capturas.
 
@@ -234,10 +317,24 @@ git push origin feature/S3-B2-iconos
 
 ## Cómo compilar
 
+Requiere CMake ≥ 3.20, compilador C++17 y Qt6 con Core, Widgets y Charts. La primera configuración descarga GoogleTest 1.14.0 y necesita acceso a GitHub.
+
+En Ubuntu (las mismas dependencias utilizadas en CI):
+
 ```bash
-mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Debug
-cmake --build . --target SIDEA_tests -j$(nproc)
+sudo apt-get install cmake build-essential qt6-base-dev libqt6charts6-dev libgl1-mesa-dev
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+cmake --build build --parallel
+./build/SIDEA
+```
+
+En Windows usa un compilador compatible con tu instalación de Qt. Ejemplo con Qt MinGW; adapta las rutas y versiones a tu equipo:
+
+```powershell
+$env:Path = "C:\Qt\Tools\CMake_64\bin;C:\Qt\Tools\mingw1310_64\bin;C:\Qt\6.12.0\mingw_64\bin;" + $env:Path
+cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_PREFIX_PATH=C:/Qt/6.12.0/mingw_64
+cmake --build build --parallel 4
+.\build\SIDEA.exe
 ```
 
 ## Correr tests
@@ -245,6 +342,8 @@ cmake --build . --target SIDEA_tests -j$(nproc)
 ```bash
 ctest --test-dir build --output-on-failure
 ```
+
+`SIDEA_tests` cubre el núcleo; `SIDEA_gui_tests` carga los recursos y verifica el render, la interpolación y los controles con `QT_QPA_PLATFORM=offscreen`. CI compila además la aplicación y los ejecutables de capturas y comparación. Para regenerar los siete íconos propios: `python tools/generar_iconos.py` (requiere Pillow; no hace falta para compilar los PNG ya incluidos).
 
 ---
 
