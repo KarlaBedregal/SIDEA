@@ -172,6 +172,11 @@ std::vector<std::shared_ptr<Unidad>> CentralDespacho::getUnidades() const {
     return m_unidades;
 }
 
+std::vector<std::shared_ptr<Incidente>> CentralDespacho::getIncidentesPendientes() const {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_cola;
+}
+
 int CentralDespacho::totalIncidentesPendientes() const {
     std::lock_guard<std::mutex> lock(m_mutex);
     return static_cast<int>(m_cola.size());

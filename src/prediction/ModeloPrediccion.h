@@ -2,6 +2,7 @@
 #include <vector>
 
 class HistorialIncidentes;
+class MapaArequipa;
 
 struct PrediccionZona {
     int nodo;
@@ -10,7 +11,7 @@ struct PrediccionZona {
 
 class ModeloPrediccion {
 public:
-    explicit ModeloPrediccion(const HistorialIncidentes& historial);
+    ModeloPrediccion(const HistorialIncidentes& historial, const MapaArequipa& mapa);
 
     PrediccionZona zonaMasRiesgosa(int horaActual) const;
     std::vector<PrediccionZona> topZonas(int n, int horaActual) const;
@@ -20,4 +21,5 @@ private:
     double calcularProbabilidad(int nodo, int hora) const;
 
     const HistorialIncidentes& m_historial;
+    const MapaArequipa& m_mapa;
 };

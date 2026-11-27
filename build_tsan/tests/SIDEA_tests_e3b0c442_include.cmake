@@ -1,5 +1,0 @@
-if(EXISTS "/home/karla/SIDEA/build_tsan/tests/SIDEA_tests_e3b0c442_tests.cmake")
-  include("/home/karla/SIDEA/build_tsan/tests/SIDEA_tests_e3b0c442_tests.cmake")
-else()
-  add_test(SIDEA_tests_NOT_BUILT SIDEA_tests_NOT_BUILT)
-endif()
