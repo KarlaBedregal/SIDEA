@@ -270,14 +270,36 @@ int CentralDespacho::totalIncidentesPendientes() const {
     return static_cast<int>(m_cola.size());
 }
 
+void CentralDespacho::registrarIncidenteAtendido(const Incidente& incidente) {
+    const auto ahora = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    std::tm horaUtc{};
+#ifdef _WIN32
+    gmtime_s(&horaUtc, &ahora);
+#else
+    gmtime_r(&ahora, &horaUtc);
+#endif
+    m_historial.registrar(incidente.getNodoUbicacion(), incidente.getTipo(), horaUtc.tm_hour);
+    notificar("incidente_atendido");
+}
+
+std::vector<RegistroHistorial> CentralDespacho::getHistorialIncidentes() const {
+    return m_historial.todos();
+}
+
+std::vector<PrediccionZona> CentralDespacho::zonasDeMayorRiesgo(int cantidad, int horaActual) const {
+    static const MapaArequipa mapa;
+    const ModeloPrediccion modelo(m_historial, mapa);
+    return modelo.topZonas(cantidad, horaActual);
+}
+
 void CentralDespacho::reiniciar() {
     std::lock_guard<std::mutex> ciclo(m_cicloMutex);
     detenerHilos();
     std::lock_guard<std::mutex> lock(m_mutex);
     m_unidades.clear();
     m_cola.clear();
+    m_historial.limpiar();
     m_estrategia.reset();
-    m_historial = HistorialIncidentes{};
     m_registros.clear();
     m_reubicacionPreventiva = false;
     ++m_revision;

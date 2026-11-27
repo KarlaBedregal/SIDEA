@@ -6,6 +6,7 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include "prediction/ModeloPrediccion.h"
 
 class MapaArequipa;
 class Unidad;
@@ -23,6 +24,7 @@ public:
 
     void setUnidades(const std::vector<std::shared_ptr<Unidad>>& unidades);
     void setIncidentes(const std::vector<std::shared_ptr<Incidente>>& incidentes);
+    void setZonasRiesgo(const std::vector<PrediccionZona>& zonas);
     void actualizar();
     void setDuracionMovimiento(int ms);
 
@@ -47,6 +49,7 @@ private:
     const MapaArequipa& m_mapa;
     std::vector<std::shared_ptr<Unidad>> m_unidades;
     std::vector<std::shared_ptr<Incidente>> m_incidentes;
+    std::vector<PrediccionZona> m_zonasRiesgo;
     std::unordered_map<int, AnimacionUnidad> m_animaciones;
     QTimer* m_timerAnimacion = nullptr;
     int m_nodoSobrevolado = -1;

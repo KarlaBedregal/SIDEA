@@ -21,6 +21,10 @@ PrediccionZona ModeloPrediccion::zonaMasRiesgosa(int horaActual) const {
     return top[0];
 }
 
+std::vector<PrediccionZona> ModeloPrediccion::zonasDeMayorRiesgo(int horaActual) const {
+    return topZonas(3, horaActual);
+}
+
 std::vector<PrediccionZona> ModeloPrediccion::topZonas(int n, int horaActual) const {
     std::vector<PrediccionZona> resultado;
     if (n <= 0) return resultado;
@@ -39,5 +43,5 @@ std::vector<PrediccionZona> ModeloPrediccion::topZonas(int n, int horaActual) co
 }
 
 void ModeloPrediccion::actualizar() {
-    // El modelo recalcula dinámicamente en cada llamada a topZonas().
+    // El modelo consulta el historial vigente en cada llamada a topZonas().
 }

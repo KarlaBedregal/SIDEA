@@ -8,6 +8,7 @@
 #include <thread>
 #include "patterns/IObservable.h"
 #include "prediction/HistorialIncidentes.h"
+#include "prediction/ModeloPrediccion.h"
 
 struct ResumenComparacion {
     std::string estrategia;
@@ -50,6 +51,9 @@ public:
     std::vector<ResumenComparacion> comparacionPrediccion() const;
     int totalIncidentesPendientes() const;
     int totalIncidentesAtendidos() const;
+    void registrarIncidenteAtendido(const Incidente& incidente);
+    std::vector<RegistroHistorial> getHistorialIncidentes() const;
+    std::vector<PrediccionZona> zonasDeMayorRiesgo(int cantidad, int horaActual) const;
     void reiniciar();
 
 private:
@@ -60,6 +64,7 @@ private:
 
     std::vector<std::shared_ptr<Unidad>> m_unidades;
     std::vector<std::shared_ptr<Incidente>> m_cola;
+    HistorialIncidentes m_historial;
     std::unique_ptr<EstrategiaDespacho> m_estrategia;
     std::unique_ptr<MapaArequipa> m_mapa;
     std::vector<std::unique_ptr<SimuladorThread>> m_hilos;
@@ -76,6 +81,5 @@ private:
         bool prediccion = false;
     };
     bool m_reubicacionPreventiva = false;
-    HistorialIncidentes m_historial;
     std::vector<RegistroDespacho> m_registros;
 };
