@@ -36,5 +36,4 @@ private:
     QComboBox* m_cbEstrategia = nullptr;
     QSpinBox* m_sbVelocidad = nullptr;
     QLabel* m_lblEstado = nullptr;
-    QCheckBox* m_cbPrediccion = nullptr;
 };

@@ -2,8 +2,8 @@
 #include <thread>
 #include <atomic>
 #include <chrono>
-#include <condition_variable>
 #include <mutex>
+#include <condition_variable>
 
 class CentralDespacho;
 
@@ -16,8 +16,11 @@ public:
     ~GeneradorIncidentes();
 
     void iniciar();
+    void pausar();
+    void reanudar();
     void detener();
     bool estaActivo() const;
+    bool estaPausado() const;
     int totalGenerados() const;
 
 private:
@@ -29,9 +32,8 @@ private:
     int m_limiteIncidentes;
     std::thread m_hilo;
     std::atomic<bool> m_activo{false};
-    std::atomic<int> m_generados{0};
-    std::mutex m_cicloMutex;
-    std::mutex m_mutexEspera;
-    std::condition_variable m_cvParada;
-    int m_contadorId = 0;
+    std::atomic<bool> m_pausado{false};
+    mutable std::mutex m_mutex;
+    std::condition_variable m_cv;
+    std::atomic<int> m_contadorId{0};
 };

@@ -34,10 +34,6 @@ void PanelControl::configurarUI() {
     m_btnIniciar  = new QPushButton("Iniciar", this);
     m_btnPausar   = new QPushButton("Pausar", this);
     m_btnDetener  = new QPushButton("Detener", this);
-    m_btnIniciar->setObjectName("iniciarSimulacion");
-    m_btnPausar->setObjectName("pausarSimulacion");
-    m_btnDetener->setObjectName("detenerSimulacion");
-    m_sbVelocidad->setObjectName("velocidadSimulacion");
 
     btnLayout->addWidget(m_btnIniciar);
     btnLayout->addWidget(m_btnPausar);
@@ -52,22 +48,10 @@ void PanelControl::configurarUI() {
     auto* estLayout = new QVBoxLayout(gbEstrategia);
 
     m_cbEstrategia = new QComboBox(this);
-    m_cbEstrategia->setObjectName("estrategiaDespacho");
     m_cbEstrategia->addItem("Más Cercana");      // index 0
     m_cbEstrategia->addItem("Prioridad");        // index 1
     m_cbEstrategia->addItem("Balance de Carga"); // index 2
     estLayout->addWidget(m_cbEstrategia);
-    m_cbPrediccion = new QCheckBox("Reubicación preventiva", this);
-    m_cbPrediccion->setObjectName("reubicacionPreventiva");
-    m_cbPrediccion->setToolTip("Las unidades libres recorren la ruta a la zona de mayor riesgo.\n"
-                             "Un nuevo despacho interrumpe este recorrido.");
-    estLayout->addWidget(m_cbPrediccion);
-    auto* nuevo = new QPushButton("Nuevo escenario", this);
-    nuevo->setObjectName("nuevoEscenario");
-    estLayout->addWidget(nuevo);
-    connect(nuevo, &QPushButton::clicked, this, &PanelControl::reiniciarPresionado);
-    connect(m_cbPrediccion, &QCheckBox::toggled, this, &PanelControl::reubicacionChanged);
-    connect(nuevo, &QPushButton::clicked, this, [this] { m_cbPrediccion->setChecked(false); });
 
     mainLayout->addWidget(gbSimulacion);
     mainLayout->addWidget(gbEstrategia);
@@ -81,7 +65,6 @@ void PanelControl::configurarUI() {
 }
 
 void PanelControl::marcarIniciado() {
-    m_sbVelocidad->setEnabled(false);
     m_btnIniciar->setEnabled(false);
     m_btnIniciar->setText("Iniciar");
     m_btnPausar->setEnabled(true);
@@ -91,7 +74,6 @@ void PanelControl::marcarIniciado() {
 }
 
 void PanelControl::marcarPausado() {
-    m_sbVelocidad->setEnabled(true);
     m_btnIniciar->setEnabled(true);
     m_btnIniciar->setText("Reanudar");
     m_btnPausar->setEnabled(false);
@@ -100,7 +82,6 @@ void PanelControl::marcarPausado() {
 }
 
 void PanelControl::marcarDetenido() {
-    m_sbVelocidad->setEnabled(true);
     m_btnIniciar->setEnabled(true);
     m_btnIniciar->setText("Iniciar");
     m_btnPausar->setEnabled(false);
