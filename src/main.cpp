@@ -1,5 +1,6 @@
 #include <QApplication>
 #include "gui/MainWindow.h"
+#include "core/ControladorDespacho.h"
 
 int main(int argc, char* argv[]) {
     QApplication app(argc, argv);
@@ -8,6 +9,9 @@ int main(int argc, char* argv[]) {
 
     MainWindow window;
     window.setWindowTitle("SIDEA");
+    
+    ControladorDespacho controlador(&window);
+
     window.show();
 
     return app.exec();

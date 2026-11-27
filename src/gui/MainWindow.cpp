@@ -56,18 +56,3 @@ void MainWindow::configurarUI() {
 void MainWindow::configurarConexiones() {
     // TODO Sprint 3: conectar signals de PanelControl con slots de MainWindow
 }
-
-void MainWindow::onEventoDespacho(QString evento) {
-    // Corre en el hilo Qt — seguro llamar widgets aquí
-    if (m_mapaWidget) {
-        m_mapaWidget->setUnidades(CentralDespacho::instancia().getUnidades());
-        m_mapaWidget->actualizar();
-    }
-    (void)evento;
-}
-
-void MainWindow::onIniciarSimulacion() {}
-void MainWindow::onPausarSimulacion() {}
-void MainWindow::onDetenerSimulacion() {}
-void MainWindow::onEstrategiaChanged(int index) { (void)index; }
-void MainWindow::onTickSimulacion() {}

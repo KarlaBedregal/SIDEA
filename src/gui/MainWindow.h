@@ -19,13 +19,12 @@ public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
 
-private slots:
-    void onIniciarSimulacion();
-    void onPausarSimulacion();
-    void onDetenerSimulacion();
-    void onEstrategiaChanged(int index);
-    void onTickSimulacion();
-    void onEventoDespacho(QString evento);
+signals:
+    void simulacionIniciada();
+    void simulacionPausada();
+    void simulacionDetenida();
+    void estrategiaCambiada(int index);
+    void tickSimulacion();
 
 private:
     void configurarUI();
@@ -33,8 +32,8 @@ private:
 
     Ui::MainWindow* ui;
     std::unique_ptr<MapaArequipa> m_mapa;
-    MapaWidget* m_mapaWidget = nullptr;
-    PanelControl* m_panelControl = nullptr;
-    EstadisticasWidget* m_estadisticasWidget = nullptr;
+    MapaWidget* m_mapaWidget;
+    PanelControl* m_panelControl;
+    EstadisticasWidget* m_estadisticasWidget;
     std::shared_ptr<IObserver> m_observer;
 };
