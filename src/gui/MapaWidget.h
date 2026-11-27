@@ -1,5 +1,8 @@
 #pragma once
 #include <QWidget>
+#include <QHash>
+#include <QPixmap>
+#include <QElapsedTimer>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -11,7 +14,6 @@ class Incidente;
 class QMouseEvent;
 class QPaintEvent;
 class QPainter;
-class QPointF;
 class QTimer;
 
 class MapaWidget : public QWidget {
@@ -24,6 +26,7 @@ public:
     void setIncidentes(const std::vector<std::shared_ptr<Incidente>>& incidentes);
     void setZonasRiesgo(const std::vector<PrediccionZona>& zonas);
     void actualizar();
+    void setDuracionMovimiento(int ms);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -32,7 +35,7 @@ protected:
 
 private:
     struct AnimacionUnidad {
-        int nodoDesde;
+        QPointF desde;
         int nodoHasta;
         qreal progreso;
     };
@@ -50,4 +53,7 @@ private:
     std::unordered_map<int, AnimacionUnidad> m_animaciones;
     QTimer* m_timerAnimacion = nullptr;
     int m_nodoSobrevolado = -1;
+    QHash<QString, QPixmap> m_iconos;
+    QElapsedTimer m_relojAnimacion;
+    int m_duracionMovimiento = 500;
 };

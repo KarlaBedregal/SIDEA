@@ -32,7 +32,7 @@ jobs:
         run: cmake -B build -DCMAKE_BUILD_TYPE=Debug
 
       - name: Compilar
-        run: cmake --build build --target SIDEA_tests --parallel
+        run: cmake --build build --target SIDEA SIDEA_tests SIDEA_gui_tests SIDEA_capturas SIDEA_comparar --parallel
 
       - name: Correr tests
         run: ctest --test-dir build --output-on-failure

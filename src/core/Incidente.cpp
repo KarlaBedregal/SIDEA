@@ -11,6 +11,15 @@ PrioridadIncidente Incidente::getPrioridad() const { return m_prioridad; }
 bool Incidente::estaAtendido() const { return m_atendido; }
 void Incidente::marcarAtendido() { m_atendido = true; }
 
+void Incidente::marcarLlegada() {
+    double sinLlegada = -1.0;
+    const double segundos = std::chrono::duration<double>(
+        std::chrono::steady_clock::now() - m_creado).count();
+    m_tiempoRespuesta.compare_exchange_strong(sinLlegada, segundos);
+}
+
+double Incidente::tiempoRespuesta() const { return m_tiempoRespuesta.load(); }
+
 std::string Incidente::tipoToString() const {
     switch (m_tipo) {
         case TipoIncidente::INCENDIO:       return "Incendio";
