@@ -300,7 +300,6 @@ void CentralDespacho::reiniciar() {
     m_cola.clear();
     m_historial.limpiar();
     m_estrategia.reset();
-    m_historial = HistorialIncidentes{};
     m_registros.clear();
     m_reubicacionPreventiva = false;
     ++m_revision;
