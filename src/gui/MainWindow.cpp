@@ -102,6 +102,14 @@ void MainWindow::configurarConexiones() {
     connect(m_panelControl, &PanelControl::pausarPresionado,   this, &MainWindow::onPausarSimulacion);
     connect(m_panelControl, &PanelControl::detenerPresionado,  this, &MainWindow::onDetenerSimulacion);
     connect(m_panelControl, &PanelControl::estrategiaChanged,  this, &MainWindow::onEstrategiaChanged);
+    connect(m_panelControl, &PanelControl::reubicacionChanged, this, [](bool activa) {
+        CentralDespacho::instancia().setReubicacionPreventiva(activa);
+    });
+    connect(m_panelControl, &PanelControl::reiniciarPresionado, this, [this] {
+        onDetenerSimulacion();
+        CentralDespacho::instancia().reiniciar();
+        inicializarEscenario();
+    });
 }
 
 void MainWindow::onEstrategiaChanged(int index) {

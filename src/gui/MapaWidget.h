@@ -57,6 +57,7 @@ private:
     std::unordered_map<int, AnimacionUnidad> m_animaciones;
     QTimer* m_timerAnimacion = nullptr;
     int m_nodoSobrevolado = -1;
+    int m_duracionMovimientoMs = 200;
 
     QPixmap m_mapaFondo;
     QRectF  m_bboxFondo;   // en coordenadas del grafo (x,y)

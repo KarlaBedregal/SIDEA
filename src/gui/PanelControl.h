@@ -33,7 +33,9 @@ private:
     QPushButton* m_btnIniciar = nullptr;
     QPushButton* m_btnPausar = nullptr;
     QPushButton* m_btnDetener = nullptr;
+    QPushButton* m_btnNuevo = nullptr;
     QComboBox* m_cbEstrategia = nullptr;
     QSpinBox* m_sbVelocidad = nullptr;
     QLabel* m_lblEstado = nullptr;
+    QCheckBox* m_cbPrediccion = nullptr;
 };

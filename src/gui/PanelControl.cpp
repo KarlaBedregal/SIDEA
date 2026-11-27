@@ -1,7 +1,8 @@
 #include "PanelControl.h"
-#include <QVBoxLayout>
-#include <QHBoxLayout>
+#include <QCheckBox>
 #include <QGroupBox>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
 
 PanelControl::PanelControl(QWidget* parent) : QWidget(parent) {
     configurarUI();
@@ -32,6 +33,9 @@ void PanelControl::configurarUI() {
     m_btnIniciar = new QPushButton("Iniciar", this);
     m_btnPausar  = new QPushButton("Pausar", this);
     m_btnDetener = new QPushButton("Detener", this);
+    m_btnIniciar->setObjectName("iniciarSimulacion");
+    m_btnPausar->setObjectName("pausarSimulacion");
+    m_btnDetener->setObjectName("detenerSimulacion");
     m_btnIniciar->setStyleSheet(
         "QPushButton{background:#27ae60;color:white;font-weight:bold;padding:6px;border-radius:4px;}"
         "QPushButton:disabled{background:#95a5a6;}");
@@ -45,27 +49,40 @@ void PanelControl::configurarUI() {
     btnLayout->addWidget(m_btnPausar);
     btnLayout->addWidget(m_btnDetener);
 
+    m_btnNuevo = new QPushButton("Nuevo escenario", this);
+    m_btnNuevo->setObjectName("nuevoEscenario");
+
     simLayout->addWidget(m_lblEstado);
     simLayout->addLayout(velLayout);
     simLayout->addLayout(btnLayout);
+    simLayout->addWidget(m_btnNuevo);
 
     auto* gbEstrategia = new QGroupBox("Estrategia de Despacho", this);
     auto* estLayout = new QVBoxLayout(gbEstrategia);
     m_cbEstrategia = new QComboBox(this);
+    m_cbEstrategia->setObjectName("estrategiaDespacho");
     m_cbEstrategia->addItem("Más Cercana");
     m_cbEstrategia->addItem("Prioridad");
     m_cbEstrategia->addItem("Balance de Carga");
     estLayout->addWidget(m_cbEstrategia);
 
+    m_sbVelocidad->setObjectName("velocidadSimulacion");
+
+    m_cbPrediccion = new QCheckBox("Reubicación preventiva", this);
+    m_cbPrediccion->setObjectName("reubicacionPreventiva");
+
     mainLayout->addWidget(gbSimulacion);
     mainLayout->addWidget(gbEstrategia);
+    mainLayout->addWidget(m_cbPrediccion);
     mainLayout->addStretch();
 
     connect(m_btnIniciar, &QPushButton::clicked, this, &PanelControl::iniciarPresionado);
     connect(m_btnPausar,  &QPushButton::clicked, this, &PanelControl::pausarPresionado);
     connect(m_btnDetener, &QPushButton::clicked, this, &PanelControl::detenerPresionado);
+    connect(m_btnNuevo,   &QPushButton::clicked, this, &PanelControl::reiniciarPresionado);
     connect(m_cbEstrategia, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &PanelControl::estrategiaChanged);
+    connect(m_cbPrediccion, &QCheckBox::toggled, this, &PanelControl::reubicacionChanged);
 }
 
 void PanelControl::marcarIniciado() {

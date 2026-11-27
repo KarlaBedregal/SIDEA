@@ -26,7 +26,7 @@ static constexpr float  GRAFO_Y_MIN   = 80.f;
 static constexpr float  GRAFO_Y_MAX   = 560.f;
 
 void MapaWidget::setDuracionMovimiento(int ms) {
-    if (m_timerAnimacion) m_timerAnimacion->setInterval(ms);
+    m_duracionMovimientoMs = qMax(16, ms);
 }
 
 MapaWidget::MapaWidget(const MapaArequipa& mapa, QWidget* parent)
@@ -35,7 +35,7 @@ MapaWidget::MapaWidget(const MapaArequipa& mapa, QWidget* parent)
     setMouseTracking(true);
 
     m_timerAnimacion = new QTimer(this);
-    m_timerAnimacion->setInterval(200);
+    m_timerAnimacion->setInterval(16);
     connect(m_timerAnimacion, &QTimer::timeout, this, &MapaWidget::avanzarAnimacion);
     m_timerAnimacion->start();
 
@@ -265,7 +265,7 @@ void MapaWidget::dibujarGrafo(QPainter& p) {
 void MapaWidget::dibujarIncidentes(QPainter& p) {
     p.save();
     for (const auto& inc : m_incidentes) {
-        if (!inc) continue;
+        if (!inc || inc->estaAtendido()) continue;
         const QPointF pos = nodoAPixel(inc->getNodoUbicacion());
 
         QColor fondo("#FF8C00");
@@ -326,7 +326,7 @@ void MapaWidget::dibujarUnidades(QPainter& p) {
 }
 
 void MapaWidget::avanzarAnimacion() {
-    constexpr qreal inc = 0.4;
+    const qreal inc = 16.0 / m_duracionMovimientoMs;
     for (const auto& unidad : m_unidades) {
         if (!unidad) continue;
         const int id = unidad->getId();
