@@ -7,6 +7,17 @@
 #include <condition_variable>
 #include <thread>
 #include "patterns/IObservable.h"
+#include "prediction/HistorialIncidentes.h"
+#include "prediction/ModeloPrediccion.h"
+
+struct ResumenComparacion {
+    std::string estrategia;
+    bool prediccion;
+    int asignados = 0;
+    int llegadas = 0;
+    int atendidos = 0;
+    double respuestaMediaSegundos = 0.0;
+};
 
 class Incidente;
 class Unidad;
@@ -33,8 +44,16 @@ public:
 
     std::vector<std::shared_ptr<Unidad>> getUnidades() const;
     std::vector<std::shared_ptr<Incidente>> getIncidentesPendientes() const;
+    std::vector<std::shared_ptr<Incidente>> getIncidentesActivos() const;
+    void setReubicacionPreventiva(bool activa);
+    bool reubicacionPreventiva() const;
+    void reubicarUnidades();
+    std::vector<ResumenComparacion> comparacionPrediccion() const;
     int totalIncidentesPendientes() const;
     int totalIncidentesAtendidos() const;
+    void registrarIncidenteAtendido(const Incidente& incidente);
+    std::vector<RegistroHistorial> getHistorialIncidentes() const;
+    std::vector<PrediccionZona> zonasDeMayorRiesgo(int cantidad, int horaActual) const;
     void reiniciar();
 
 private:
@@ -45,6 +64,7 @@ private:
 
     std::vector<std::shared_ptr<Unidad>> m_unidades;
     std::vector<std::shared_ptr<Incidente>> m_cola;
+    HistorialIncidentes m_historial;
     std::unique_ptr<EstrategiaDespacho> m_estrategia;
     std::unique_ptr<MapaArequipa> m_mapa;
     std::vector<std::unique_ptr<SimuladorThread>> m_hilos;
@@ -55,4 +75,11 @@ private:
     std::mutex m_cicloMutex;
     std::uint64_t m_revision = 0;
     int m_tickMs = 500;
+    struct RegistroDespacho {
+        std::shared_ptr<Incidente> incidente;
+        std::string estrategia;
+        bool prediccion = false;
+    };
+    bool m_reubicacionPreventiva = false;
+    std::vector<RegistroDespacho> m_registros;
 };

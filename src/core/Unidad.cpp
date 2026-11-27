@@ -101,9 +101,28 @@ bool Unidad::asignarIncidente(std::shared_ptr<Incidente> inc) {
     if (!puedeAtender(*inc) || prioridad < 1 || prioridad > 4) return false;
     if (rutaEntre(*m_mapa, m_nodoActual, inc->getNodoUbicacion()).empty() ||
         rutaEntre(*m_mapa, inc->getNodoUbicacion(), m_nodoBase).empty()) return false;
+    cancelarReubicacion();
     m_incidenteActual = std::move(inc);
     m_inicioOcupacion = std::chrono::steady_clock::now();
     return true;
+}
+
+bool Unidad::reubicar(int destino) {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+    if (!estaLibre()) return false;
+    if (destino == m_nodoActual) { cancelarReubicacion(); return false; }
+    if (m_reubicando && !m_ruta.empty() && m_ruta.back() == destino) return false;
+    if (!prepararRuta(destino)) return false;
+    m_reubicando = true;
+    return true;
+}
+
+void Unidad::cancelarReubicacion() {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+    if (!m_reubicando) return;
+    m_reubicando = false;
+    m_ruta.clear();
+    m_indiceRuta = 0;
 }
 
 bool Unidad::puedeAtender(const Incidente& inc) const {

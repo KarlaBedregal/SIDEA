@@ -5,7 +5,10 @@
 #include <stdexcept>
 
 void EstadoLibre::manejar(Unidad& unidad) {
-    if (!unidad.m_incidenteActual) return;
+    if (!unidad.m_incidenteActual) {
+        if (unidad.m_reubicando && unidad.avanzarEnRuta()) unidad.cancelarReubicacion();
+        return;
+    }
     if (!unidad.prepararRuta(unidad.m_incidenteActual->getNodoUbicacion()))
         throw std::logic_error("No existe ruta al incidente asignado");
     unidad.cambiarEstado(std::make_unique<EstadoEnRuta>());

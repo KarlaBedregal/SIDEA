@@ -4,6 +4,7 @@
 #include <QPushButton>
 #include <QSpinBox>
 #include <QLabel>
+#include <QCheckBox>
 
 class PanelControl : public QWidget {
     Q_OBJECT
@@ -23,6 +24,8 @@ signals:
     void pausarPresionado();
     void detenerPresionado();
     void estrategiaChanged(int index);
+    void reubicacionChanged(bool activa);
+    void reiniciarPresionado();
 
 private:
     void configurarUI();

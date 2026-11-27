@@ -2,7 +2,6 @@
 #include "ui_MainWindow.h"
 #include "MapaWidget.h"
 #include "PanelControl.h"
-#include "EstadisticasWidget.h"
 #include "core/CentralDespacho.h"
 #include "core/UnidadFactory.h"
 #include "graph/MapaArequipa.h"
@@ -14,15 +13,18 @@
 #include "strategies/EstrategiaBalanceCarga.h"
 #include "stats/Estadisticas.h"
 #include <QHBoxLayout>
+#include <QMessageBox>
+#include <QSaveFile>
+#include <QTableWidget>
+#include <QTextStream>
+#include <QTimer>
 #include <QVBoxLayout>
 
-// Adapter: recibe actualizar() desde cualquier hilo y lo encola al hilo Qt
 class MainWindowObserver : public IObserver {
 public:
     explicit MainWindowObserver(MainWindow* w) : m_window(w) {}
     void actualizar(const std::string& evento) override {
-        QMetaObject::invokeMethod(m_window, "onEventoDespacho",
-            Qt::QueuedConnection,
+        QMetaObject::invokeMethod(m_window, "onEventoDespacho", Qt::QueuedConnection,
             Q_ARG(QString, QString::fromStdString(evento)));
     }
 private:
@@ -30,10 +32,8 @@ private:
 };
 
 MainWindow::MainWindow(QWidget* parent)
-    : QMainWindow(parent), ui(new Ui::MainWindow) {
+    : QMainWindow(parent), ui(new Ui::MainWindow), m_mapa(std::make_unique<MapaArequipa>()) {
     ui->setupUi(this);
-
-    m_mapa = std::make_unique<MapaArequipa>();
     m_mapaWidget = new MapaWidget(*m_mapa, this);
 
     auto obs = std::make_shared<MainWindowObserver>(this);
@@ -46,6 +46,10 @@ MainWindow::MainWindow(QWidget* parent)
     configurarUI();
     inicializarEscenario();
     configurarConexiones();
+    inicializarEscenario();
+    m_observer = std::make_shared<MainWindowObserver>(this);
+    CentralDespacho::instancia().suscribir(m_observer);
+    m_timerSimulacion->start();
 }
 
 MainWindow::~MainWindow() {
@@ -200,6 +204,7 @@ void MainWindow::onEventoDespacho(QString evento) {
     }
     actualizarEstadisticas();
     (void)evento;
+    onTickSimulacion();
 }
 
 void MainWindow::actualizarEstadisticas() {

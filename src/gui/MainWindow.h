@@ -6,7 +6,6 @@
 
 class MapaWidget;
 class PanelControl;
-class EstadisticasWidget;
 class MapaArequipa;
 class IObserver;
 class SimuladorThread;
@@ -41,7 +40,6 @@ private:
     std::unique_ptr<MapaArequipa> m_mapa;
     MapaWidget* m_mapaWidget = nullptr;
     PanelControl* m_panelControl = nullptr;
-    EstadisticasWidget* m_estadisticasWidget = nullptr;
     std::shared_ptr<IObserver> m_observer;
 
     QTimer* m_timerSimulacion = nullptr;
