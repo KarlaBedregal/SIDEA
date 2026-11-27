@@ -1,42 +1,101 @@
 @startuml Secuencia_Despacho
-
 actor Usuario
-participant "GeneradorIncidentes" as Gen
-participant "CentralDespacho\n<<Singleton>>" as Central
-participant "EstrategiaDespacho" as Estrategia
-participant "Unidad" as Unit
-participant "Dijkstra" as Dijk
+participant MainWindow as UI
+participant PanelControl as Panel
+participant GeneradorIncidentes as Gen
+participant "CentralDespacho\nSingleton / mutex" as Central
+participant EstrategiaDespacho as Estrategia
+participant Unidad as U
+participant "dijkstra<T>()" as Dijkstra
+participant "SimuladorThread\nuno por unidad" as Sim
+participant ModeloPrediccion as Modelo
+participant HistorialIncidentes as Hist
+participant MainWindowObserver as Obs
+participant MapaWidget as Mapa
 
-== Generación de incidente ==
-Gen -> Gen : crearAleatorio()
+== Inicio ==
+Usuario -> Panel : Iniciar
+Panel -> UI : iniciarPresionado()
+UI -> Central : setTickMs(), iniciar()
+Central -> Sim : iniciar()
+UI -> Gen : iniciar()
+
+== Entrada y consumidor independiente de Qt ==
 Gen -> Central : recibirIncidente(inc)
-Central -> Central : encolar(inc)
+Central -> Hist : registrar(nodo, tipo, hora UTC)
+Central -> Central : encolar y registrar incidente\nincrementar revisión
 Central -> Central : condition_variable.notify_one()
-
-== Procesamiento ==
-Central -> Estrategia : seleccionar(unidades, inc)
-Estrategia -> Unit : estaLibre() ?
-Estrategia --> Central : unidadElegida
-
-== Asignación ==
-Central -> Dijk : dijkstra(mapa, nodoUnidad)
-Dijk --> Central : ruta[]
-Central -> Unit : setRuta(ruta)
-Central -> Unit : asignarIncidente(inc)
-Unit -> Unit : cambiarEstado(EstadoEnRuta)
-
-== Ejecución en hilo propio ==
-loop cada tick
-    Unit -> Unit : tick()
-    alt EnRuta
-        Unit -> Unit : avanzarEnRuta()
-    else Atendiendo
-        Unit -> Unit : atenderIncidente()
-        Unit -> Unit : cambiarEstado(EstadoRegresando)
-    else Regresando
-        Unit -> Unit : avanzarHaciaBase()
-        Unit -> Unit : cambiarEstado(EstadoLibre)
-    end
+Central -> Obs : actualizar("incidente_recibido")\nfuera del mutex de central
+Obs ->> UI : invokeMethod(onEventoDespacho)\nQueuedConnection
+Central -> Central : bucleConsumo(): despertar\nprioridad descendente, FIFO en empates
+Central -> U : estaLibre() && puedeAtender(inc)
+Central -> Estrategia : seleccionar(compatibles, inc)
+Estrategia --> Central : unidad o nullptr
+alt hay unidad
+  Central -> U : asignarIncidente(inc)
+  U -> Dijkstra : comprobar rutas al incidente y a base
+  U -> U : cancelarReubicacion(), reservar incidente
+  Central -> Central : retirar de cola\nguardar estrategia y modo de predicción
+  Central -> Obs : actualizar("unidad_asignada")\nfuera del mutex
+else no hay unidad compatible
+  Central -> Central : conservar incidente y esperar próximo evento
 end
 
+== Ciclo de estados ==
+loop cada tick de simulación (hasta volver a base)
+  Sim -> U : tick() bajo recursive_mutex
+  alt Libre con incidente reservado
+    U -> Dijkstra : prepararRuta(nodo del incidente)
+    U -> U : diferir transición a EnRuta hasta terminar manejar()
+  else EnRuta
+    U -> U : avanzarEnRuta()
+    opt llegada
+      U -> U : inc.marcarLlegada(), iniciar atención\nEstadoAtendiendo
+    end
+  else Atendiendo
+    U -> U : consumir ticks, atender y marcarAtendido()
+    U -> Dijkstra : prepararRuta(base)
+    U -> U : EstadoRegresando
+  else Regresando y llegada a base
+    U -> U : liberar incidente, EstadoLibre
+  end
+end
+U -> Central : notificarUnidadLibre()\nfuera del mutex de Unidad
+Central -> Central : incrementar revisión y despertar consumidor
+Central -> Obs : actualizar("unidad_libre")
+
+== Prevención opcional ==
+Usuario -> Panel : activar/desactivar checkbox
+Panel -> UI : reubicacionChanged(bool)
+UI -> Central : setReubicacionPreventiva(bool)
+opt prevención activa y unidad libre sin pendiente compatible
+  Central -> Modelo : zonaMasRiesgosa(hora UTC)
+  Modelo -> Hist : frecuencias por zona y hora
+  Modelo --> Central : nodo con probabilidad positiva o -1
+  Central -> U : reubicar(nodo)
+  U -> Dijkstra : prepararRuta(nodo)
+  loop cada tick, mientras no haya nuevo despacho
+    Sim -> U : tick(): EstadoLibre avanza ruta preventiva
+  end
+end
+
+== Refresco independiente de hilos de unidad ==
+loop QTimer de UI, cada 100 ms
+  UI -> Central : getUnidades(), getIncidentesPendientes()\ngetIncidentesActivos(), comparacionPrediccion()
+  Central --> UI : copias de listas y resumen por estrategia/modo
+  UI -> Mapa : setUnidades(), setIncidentes()
+  UI -> UI : tabla de llegadas, atendidos y respuesta media
+end
+loop QTimer de mapa, cada 16 ms
+  Mapa -> Mapa : interpolar desde posición visible\ny pintar PNG de recursos
+end
+
+== Parada ==
+Usuario -> UI : Pausar / Detener / cerrar
+UI -> Gen : detener() y join
+UI -> Central : detener(): despertar consumidor\ny unir todos los hilos
+note over UI, Central
+  Pausa/Detener conservan escenario y métricas.
+  Nuevo escenario llama reiniciar(): limpia historia, unidades y métricas.
+end note
 @enduml

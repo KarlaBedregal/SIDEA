@@ -5,6 +5,7 @@
 
 void EstadoEnRuta::manejar(Unidad& unidad) {
     if (!unidad.m_incidenteActual || !unidad.avanzarEnRuta()) return;
+    unidad.m_incidenteActual->marcarLlegada();
     // Duración simulada: baja=4, media=3, alta=2 y crítica=1 tick de atención.
     unidad.m_ticksAtencionRestantes =
         5 - static_cast<int>(unidad.m_incidenteActual->getPrioridad());

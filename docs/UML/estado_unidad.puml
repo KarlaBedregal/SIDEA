@@ -1,18 +1,35 @@
 @startuml Estado_Unidad
-
+!pragma layout smetana
 skinparam state {
-    BackgroundColor LightBlue
-    BorderColor DarkBlue
+  BackgroundColor #E7F1FA
+  BorderColor #17324D
 }
-
-[*] --> Libre : creación
-
-Libre --> EnRuta : se asigna incidente\n+ se calcula ruta Dijkstra
-EnRuta --> Atendiendo : llega al nodo\ndel incidente
-Atendiendo --> Regresando : incidente atendido\n(tiempo completado)
-Regresando --> Libre : llega a nodo base
-
-EnRuta --> EnRuta : avanza un nodo\nen la ruta
-Regresando --> Regresando : avanza un nodo\nhacia la base
-
+title Ciclo real de Unidad::tick()
+[*] --> Libre
+state Libre {
+  [*] --> EnEspera
+  EnEspera --> Reubicando : prevención activa + historia válida\nreubicar(destino): Dijkstra
+  Reubicando --> EnEspera : llegada a zona de riesgo\no toggle desactivado
+  Reubicando --> Reubicando : tick: avanzarEnRuta()\nun nodo por tick
+}
+Libre --> EnRuta : incidente reservado + siguiente tick\nEstadoLibre prepara ruta Dijkstra
+EnRuta --> EnRuta : tick: avanzar un nodo
+EnRuta --> Atendiendo : llega al incidente\nmarcarLlegada() y guardar tiempo de respuesta
+Atendiendo --> Atendiendo : consumir ticks de atención
+Atendiendo --> Regresando : transcurren 5 - prioridad ticks\natenderIncidente(), marcarAtendido()\npreparar ruta a base
+Regresando --> Regresando : tick: avanzar un nodo a base
+Regresando --> Libre : llega a base, acumula tiempo ocupado\nborra incidente/ruta\nnotificarUnidadLibre() fuera del mutex de unidad
+note right of Libre
+  EnEspera y Reubicando son submodos de EstadoLibre,
+  no clases EstadoUnidad adicionales.
+  asignarIncidente() reserva inmediatamente:
+  estaLibre() devuelve false aunque el estado aún diga Libre.
+  El despacho cancela el recorrido preventivo.
+  El nodo base original nunca cambia.
+end note
+note bottom of Regresando
+  La notificación despierta al consumidor.
+  Con prevención activa, la central prepara otra ruta
+  para las unidades libres sin pendientes compatibles.
+end note
 @enduml
