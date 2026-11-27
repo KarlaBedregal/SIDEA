@@ -1,112 +1,287 @@
 @startuml SIDEA_Clases
-
+!pragma layout smetana
+hide empty members
 skinparam classAttributeIconSize 0
-skinparam classFontSize 12
+skinparam packageStyle rectangle
+skinparam linetype ortho
 
-' === CORE ===
-abstract class Unidad {
-    # m_id : int
-    # m_nombre : string
+title SIDEA — clases y dependencias implementadas
+
+package "core" {
+  enum TipoUnidad {
+    AMBULANCIA
+    BOMBERO
+    SERENAZGO
+  }
+  enum TipoIncidente {
+    INCENDIO
+    ACCIDENTE
+    ROBO
+    URGENCIA_MEDICA
+  }
+  enum PrioridadIncidente {
+    BAJA = 1
+    MEDIA = 2
+    ALTA = 3
+    CRITICA = 4
+  }
+  abstract class Unidad {
     # m_nodoBase : int
     # m_nodoActual : int
-    # m_estado : EstadoUnidad*
-    # m_incidentesAtendidos : int
-    --
-    + atenderIncidente(Incidente) {abstract}
-    + getTipoUnidad() : string {abstract}
+    # m_incidenteActual : shared_ptr<Incidente>
+    - m_reubicando : bool
+    - m_mutex : recursive_mutex
     + tick()
     + estaLibre() : bool
-    + cambiarEstado(EstadoUnidad*)
-}
-
-class Ambulancia extends Unidad {
-    + atenderIncidente(Incidente) override
-    + getTipoUnidad() : string
-}
-
-class Bombero extends Unidad {
-    + atenderIncidente(Incidente) override
-    + getTipoUnidad() : string
-}
-
-class Serenazgo extends Unidad {
-    + atenderIncidente(Incidente) override
-    + getTipoUnidad() : string
-}
-
-class Incidente {
-    - m_id : int
-    - m_tipo : TipoIncidente
-    - m_nodoUbicacion : int
-    - m_prioridad : PrioridadIncidente
-    - m_atendido : bool
-    --
-    + getId() : int
-    + getTipo() : TipoIncidente
-    + getPrioridad() : PrioridadIncidente
+    + asignarIncidente(inc) : bool
+    + reubicar(destino) : bool
+    + cancelarReubicacion()
+    - prepararRuta(destino) : bool
+    - avanzarEnRuta() : bool
+    {abstract} + atenderIncidente(inc)
+    {abstract} + getTipoUnidad() : string
+  }
+  class Ambulancia
+  class Bombero
+  class Serenazgo
+  class Incidente {
+    - m_atendido : atomic<bool>
+    - m_tiempoRespuesta : atomic<double>
+    + getNodoUbicacion() : int
+    + marcarLlegada()
+    + tiempoRespuesta() : double
     + marcarAtendido()
-}
-
-class CentralDespacho <<Singleton>> {
-    - {static} instancia : CentralDespacho
-    - m_unidades : vector<Unidad>
-    - m_cola : vector<Incidente>
-    - m_estrategia : EstrategiaDespacho
-    --
-    + {static} instancia() : CentralDespacho&
-    + recibirIncidente(Incidente)
-    + setEstrategia(EstrategiaDespacho)
+  }
+  class CentralDespacho <<Singleton>> {
+    - m_mutex : mutex
+    - m_cv : condition_variable
+    - m_cola : vector<shared_ptr<Incidente>>
+    - m_reubicacionPreventiva : bool
+    {static} + instancia() : CentralDespacho&
+    + registrarUnidad(unidad)
+    + recibirIncidente(incidente)
+    + iniciar()
+    + detener()
+    + reiniciar()
     + procesarCola()
+    + getIncidentesPendientes()
+    + getIncidentesActivos()
+    + setReubicacionPreventiva(activa)
+    + reubicarUnidades()
+    + comparacionPrediccion()
+    - despacharUno() : bool
+    - bucleConsumo()
+  }
+  class "CentralDespacho::RegistroDespacho" as RegistroDespacho <<struct>> {
+    incidente : shared_ptr<Incidente>
+    estrategia : string
+    prediccion : bool
+  }
+  class ResumenComparacion <<struct>> {
+    estrategia : string
+    prediccion : bool
+    asignados : int
+    llegadas : int
+    atendidos : int
+    respuestaMediaSegundos : double
+  }
+  class UnidadFactory <<Factory>> {
+    {static} + crear(id, tipo, nombre, nodoBase)
+  }
+  class IncidenteFactory <<Factory>> {
+    {static} + crear(id, tipo, nodo, prioridad)
+    {static} + crearAleatorio(id, nodoMax)
+  }
 }
-
-' === STATE ===
-abstract class EstadoUnidad {
-    + manejar(Unidad&) {abstract}
-    + nombre() : string {abstract}
+package "core/states" {
+  abstract class EstadoUnidad {
+    {abstract} + manejar(Unidad&)
+    {abstract} + nombre() : string
+  }
+  class EstadoLibre
+  class EstadoEnRuta
+  class EstadoAtendiendo
+  class EstadoRegresando
 }
-
-class EstadoLibre extends EstadoUnidad
-class EstadoEnRuta extends EstadoUnidad
-class EstadoAtendiendo extends EstadoUnidad
-class EstadoRegresando extends EstadoUnidad
-
-Unidad o-- EstadoUnidad : estado
-
-' === STRATEGY ===
-abstract class EstrategiaDespacho {
-    + seleccionar(unidades, incidente) {abstract}
-    + nombre() : string {abstract}
+package "strategies" {
+  abstract class EstrategiaDespacho {
+    {abstract} + seleccionar(unidades, incidente)
+    {abstract} + nombre() : string
+  }
+  class EstrategiaMasCercana
+  class EstrategiaPrioridad
+  class EstrategiaBalanceCarga
 }
-
-class EstrategiaMasCercana extends EstrategiaDespacho
-class EstrategiaPrioridad extends EstrategiaDespacho
-class EstrategiaBalanceCarga extends EstrategiaDespacho
-
-CentralDespacho o-- EstrategiaDespacho
-
-' === GRAPH ===
-class Grafo<T> {
+package "graph" {
+  class "Grafo<T>" as Grafo {
     + agregarNodo(id)
-    + agregarArista(origen, destino, peso)
-    + vecinos(nodo) : vector<Arista>
-    + dijkstra(origen) : ResultadoDijkstra
-}
-
-class ColaPrioridad<T> {
+    + agregarAristaBidireccional(origen, destino, peso, datos)
+    + vecinos(nodo)
+    + nodos()
+  }
+  class "Arista<T>" as Arista <<struct>> {
+    destino : int
+    peso : double
+    datos : T
+  }
+  class DatosVia <<struct>>
+  class PosicionNodo <<struct>>
+  class MapaArequipa {
+    + grafo() : const Grafo<DatosVia>&
+    + posicion(nodo) : PosicionNodo
+    + nombreZona(nodo) : string
+  }
+  class ResultadoDijkstra <<struct>> {
+    + distanciaA(destino) : double
+    + reconstruirRuta(destino) : vector<int>
+  }
+  class "dijkstra<T>(grafo, origen)" as Dijkstra <<function>>
+  class "ColaPrioridad<T>" as ColaPrioridad {
     + push(elemento)
     + pop() : T
-    + top() : T
-    + estaVacia() : bool
+    + top() : const T&
+  }
 }
-
-' === OBSERVER ===
-interface IObserver {
-    + actualizar(evento : string)
+package "patterns" {
+  abstract class IObservable {
+    + suscribir(observer)
+    + desuscribir(observer)
+    # notificar(evento)
+  }
+  interface IObserver {
+    + actualizar(evento)
+  }
 }
-
-abstract class IObservable {
-    + suscribir(IObserver)
-    + notificar(evento)
+package "threading" {
+  class SimuladorThread {
+    - m_hilo : thread
+    + iniciar()
+    + detener()
+    - bucleSimulacion()
+  }
+  class GeneradorIncidentes {
+    - m_hilo : thread
+    + iniciar()
+    + detener()
+    + totalGenerados() : int
+  }
 }
-
+package "prediction" {
+  class RegistroHistorial <<struct>> {
+    nodo : int
+    tipo : TipoIncidente
+    hora : int
+  }
+  class HistorialIncidentes {
+    + registrar(nodo, tipo, hora)
+    + frecuenciaPorZona(nodo) : int
+    + frecuenciaPorHora(nodo, hora) : int
+    + todos()
+  }
+  class PrediccionZona <<struct>> {
+    nodo : int
+    probabilidad : double
+  }
+  class ModeloPrediccion {
+    + zonaMasRiesgosa(hora) : PrediccionZona
+    + topZonas(n, hora)
+    + actualizar()
+  }
+}
+package "gui" {
+  class MainWindow <<QMainWindow>> {
+    - onTickSimulacion()
+    - onEventoDespacho(evento)
+    - actualizarComparacion()
+    - exportarComparacion()
+  }
+  class MainWindowObserver <<Adapter>>
+  class PanelControl <<QWidget>> {
+    + iniciarPresionado() <<signal>>
+    + reubicacionChanged(bool) <<signal>>
+    + reiniciarPresionado() <<signal>>
+  }
+  class MapaWidget <<QWidget>> {
+    + setUnidades(unidades)
+    + setIncidentes(incidentes)
+    + setDuracionMovimiento(ms)
+    - avanzarAnimacion()
+    - dibujarIncidentes(QPainter&)
+    - dibujarUnidades(QPainter&)
+  }
+  class "MapaWidget::AnimacionUnidad" as AnimacionUnidad <<struct>>
+  class EstadisticasWidget <<QWidget>>
+}
+package "stats" {
+  class Estadisticas
+  class EstadisticaUnidad <<struct>>
+}
+Unidad <|-- Ambulancia
+Unidad <|-- Bombero
+Unidad <|-- Serenazgo
+Unidad *-- EstadoUnidad : unique_ptr
+Unidad --> Incidente : asignado
+Unidad *-- MapaArequipa : mapa privado
+EstadoUnidad <|-- EstadoLibre
+EstadoUnidad <|-- EstadoEnRuta
+EstadoUnidad <|-- EstadoAtendiendo
+EstadoUnidad <|-- EstadoRegresando
+Incidente --> TipoIncidente
+Incidente --> PrioridadIncidente
+UnidadFactory ..> TipoUnidad
+UnidadFactory ..> Unidad : crea
+IncidenteFactory ..> Incidente : crea
+CentralDespacho o-- Unidad : shared_ptr
+CentralDespacho *-- RegistroDespacho
+RegistroDespacho --> Incidente
+CentralDespacho *-- HistorialIncidentes
+CentralDespacho *-- SimuladorThread
+CentralDespacho *-- MapaArequipa
+CentralDespacho *-- EstrategiaDespacho
+CentralDespacho ..> ModeloPrediccion : calcula bajo mutex
+CentralDespacho ..> ResumenComparacion : devuelve
+EstrategiaDespacho <|-- EstrategiaMasCercana
+EstrategiaDespacho <|-- EstrategiaPrioridad
+EstrategiaDespacho <|-- EstrategiaBalanceCarga
+EstrategiaMasCercana --> MapaArequipa
+EstrategiaMasCercana ..> Dijkstra
+Unidad ..> Dijkstra
+MapaArequipa *-- Grafo
+MapaArequipa *-- PosicionNodo
+Grafo *-- Arista
+Arista ..> DatosVia
+Dijkstra ..> Grafo
+Dijkstra ..> ResultadoDijkstra
+IObservable <|-- CentralDespacho
+IObservable o-- IObserver
+IObserver <|.. MainWindowObserver
+MainWindowObserver --> MainWindow : invokeMethod / QueuedConnection
+SimuladorThread --> Unidad : tick()
+GeneradorIncidentes --> CentralDespacho : recibirIncidente()
+GeneradorIncidentes ..> IncidenteFactory
+HistorialIncidentes *-- RegistroHistorial
+ModeloPrediccion --> HistorialIncidentes
+ModeloPrediccion --> MapaArequipa
+ModeloPrediccion ..> PrediccionZona
+MainWindow *-- MainWindowObserver
+MainWindow *-- MapaArequipa
+MainWindow *-- MapaWidget
+MainWindow *-- PanelControl
+MainWindow *-- GeneradorIncidentes
+MainWindow --> CentralDespacho
+MainWindow ..> ResumenComparacion : tabla Qt / CSV
+MapaWidget *-- AnimacionUnidad
+MapaWidget --> Unidad
+MapaWidget --> Incidente
+EstadisticasWidget ..> Estadisticas
+Estadisticas *-- EstadisticaUnidad
+note bottom of EstadisticasWidget
+  Módulo existente para S3-B4.
+  La comparación de predicción usa
+  ResumenComparacion en MainWindow.
+end note
+note bottom of ColaPrioridad
+  TAD independiente. Dijkstra usa std::priority_queue;
+  la central ordena su vector de pendientes con stable_sort.
+end note
 @enduml

@@ -23,12 +23,15 @@ PrediccionZona ModeloPrediccion::zonaMasRiesgosa(int horaActual) const {
 
 std::vector<PrediccionZona> ModeloPrediccion::topZonas(int n, int horaActual) const {
     std::vector<PrediccionZona> resultado;
+    if (n <= 0) return resultado;
     for (int nodo : m_mapa.grafo().nodos()) {
-        resultado.push_back({nodo, calcularProbabilidad(nodo, horaActual)});
+        const double probabilidad = calcularProbabilidad(nodo, horaActual);
+        if (probabilidad > 0.0) resultado.push_back({nodo, probabilidad});
     }
     std::sort(resultado.begin(), resultado.end(),
               [](const PrediccionZona& a, const PrediccionZona& b) {
-                  return a.probabilidad > b.probabilidad;
+                  return a.probabilidad != b.probabilidad ? a.probabilidad > b.probabilidad
+                                                        : a.nodo < b.nodo;
               });
     if (n > 0 && static_cast<int>(resultado.size()) > n)
         resultado.resize(n);

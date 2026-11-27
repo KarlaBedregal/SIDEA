@@ -1,0 +1,7 @@
+estrategia,prediccion,incidentes,llegadas,respuesta_media_ticks,atendidos,fin_tick
+Mas cercana,no,24,24,2.250,24,281
+Mas cercana,si,24,24,2.000,24,281
+Prioridad,no,24,24,3.250,24,283
+Prioridad,si,24,24,2.042,24,281
+Balance de carga,no,24,24,3.083,24,285
+Balance de carga,si,24,24,2.042,24,282
