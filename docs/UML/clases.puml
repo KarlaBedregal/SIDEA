@@ -190,27 +190,42 @@ package "prediction" {
 }
 package "gui" {
   class MainWindow <<QMainWindow>> {
+    - m_logPanel : LogPanel*
     - onTickSimulacion()
     - onEventoDespacho(evento)
-    - actualizarComparacion()
-    - exportarComparacion()
+    - actualizarEstadisticas()
+    - inicializarEscenario()
   }
   class MainWindowObserver <<Adapter>>
   class PanelControl <<QWidget>> {
     + iniciarPresionado() <<signal>>
-    + reubicacionChanged(bool) <<signal>>
-    + reiniciarPresionado() <<signal>>
+    + pausarPresionado() <<signal>>
+    + detenerPresionado() <<signal>>
+    + estrategiaChanged(int) <<signal>>
+    + marcarIniciado()
+    + marcarPausado()
+    + marcarDetenido()
   }
   class MapaWidget <<QWidget>> {
     + setUnidades(unidades)
     + setIncidentes(incidentes)
+    + setZonasRiesgo(zonas)
+    + cargarMapaFondo(ruta, latNW, lonNW, latSE, lonSE)
     + setDuracionMovimiento(ms)
-    - avanzarAnimacion()
+    - dibujarFondo(QPainter&)
     - dibujarIncidentes(QPainter&)
     - dibujarUnidades(QPainter&)
+    - avanzarAnimacion()
   }
   class "MapaWidget::AnimacionUnidad" as AnimacionUnidad <<struct>>
-  class EstadisticasWidget <<QWidget>>
+  class EstadisticasWidget <<QWidget>> {
+    + actualizar(stats)
+    + limpiar()
+    - exportarResumen()
+  }
+  class LogPanel <<QWidget>> {
+    + agregarEvento(texto, tipo) <<slot>>
+  }
 }
 package "stats" {
   class Estadisticas
@@ -267,19 +282,14 @@ MainWindow *-- MainWindowObserver
 MainWindow *-- MapaArequipa
 MainWindow *-- MapaWidget
 MainWindow *-- PanelControl
-MainWindow *-- GeneradorIncidentes
+MainWindow *-- LogPanel
 MainWindow --> CentralDespacho
-MainWindow ..> ResumenComparacion : tabla Qt / CSV
 MapaWidget *-- AnimacionUnidad
 MapaWidget --> Unidad
 MapaWidget --> Incidente
+MapaWidget ..> PrediccionZona : setZonasRiesgo
 EstadisticasWidget ..> Estadisticas
 Estadisticas *-- EstadisticaUnidad
-note bottom of EstadisticasWidget
-  Módulo existente para S3-B4.
-  La comparación de predicción usa
-  ResumenComparacion en MainWindow.
-end note
 note bottom of ColaPrioridad
   TAD independiente. Dijkstra usa std::priority_queue;
   la central ordena su vector de pendientes con stable_sort.

@@ -96,10 +96,10 @@ Cada integrante tiene issues asignados por sprint (sorteo). Búscalos en la pest
 |------------|----------|----------|----------|
 | **KarlaBedregal** | [#3 Dijkstra + ColaPrioridad](../../issues/3) ✅ | [#10 Threads](../../issues/10) ✅ · [#12 Observer Qt](../../issues/12) ✅ | — |
 | **tniia** | [#2 Grafo + Unidad](../../issues/2) ✅ | [#7 Patrón State](../../issues/7) ✅ · [#11 Productor-consumidor](../../issues/11) ✅ | — |
-| **ISacck144** | [#4 Mapa + CentralDespacho](../../issues/4) ✅ | [#8 Estrategia más cercana](../../issues/8) ✅ | [#15 Panel de control](../../issues/15) |
-| **Daniel-IS04** | [#1 Setup + Incidente](../../issues/1) ✅ | [#9 Estrategias prioridad/balance](../../issues/9) ✅ | [#16 Estadísticas](../../issues/16) |
-| **SharonCondoriUNSA** | [#5 Subclases Unidad](../../issues/5) ✅ | — | [#13 Mapa Qt animado](../../issues/13) ✅ · [#17 Historial + predicción](../../issues/17) |
-| **FernandoBarra05** | [#6 Factories + tests](../../issues/6) ✅ | — | [#14 Íconos + movimiento](../../issues/14) · [#18 UML + docs](../../issues/18) |
+| **ISacck144** | [#4 Mapa + CentralDespacho](../../issues/4) ✅ | [#8 Estrategia más cercana](../../issues/8) ✅ | [#15 Panel de control](../../issues/15) ✅ |
+| **Daniel-IS04** | [#1 Setup + Incidente](../../issues/1) ✅ | [#9 Estrategias prioridad/balance](../../issues/9) ✅ | [#16 Estadísticas](../../issues/16) ✅ |
+| **SharonCondoriUNSA** | [#5 Subclases Unidad](../../issues/5) ✅ | — | [#13 Mapa Qt animado](../../issues/13) ✅ · [#17 Historial + predicción](../../issues/17) ✅ |
+| **FernandoBarra05** | [#6 Factories + tests](../../issues/6) ✅ | — | [#14 Íconos + movimiento](../../issues/14) ✅ · [#18 UML + docs](../../issues/18) ✅ |
 
 > ✅ = mergeado. Abre tu issue antes de empezar y muévelo a "In Progress" en el Kanban.
 
@@ -111,7 +111,7 @@ Cada integrante tiene issues asignados por sprint (sorteo). Búscalos en la pest
 |--------|--------|---------|--------|
 | **Sprint 1** | 7 nov | Compilación, estructura base y tests | ✅ Completo |
 | **Sprint 2** | 8 – 25 nov | Lógica de despacho + concurrencia | ✅ Completo |
-| **Sprint 3** | 25 nov – 5 dic | GUI animada + estadísticas + predicción | En curso |
+| **Sprint 3** | 25 nov – 5 dic | GUI animada + estadísticas + predicción | ✅ Completo |
 
 ---
 
@@ -358,12 +358,12 @@ SIDEA/
 │   ├── strategies/    # Patrón Strategy: 3 estrategias de despacho
 │   ├── patterns/      # IObserver / IObservable
 │   ├── threading/     # GeneradorIncidentes, SimuladorThread
-│   ├── gui/           # MainWindow, MapaWidget, PanelControl, EstadisticasWidget
+│   ├── gui/           # MainWindow, MapaWidget, PanelControl, EstadisticasWidget, LogPanel
 │   ├── stats/         # Estadisticas
 │   └── prediction/    # HistorialIncidentes, ModeloPrediccion
 ├── tests/             # Tests unitarios (GoogleTest vía FetchContent)
-├── docs/UML/          # Diagramas PlantUML
-└── assets/icons/      # Íconos de unidades e incidentes
+├── docs/UML/          # Diagramas PlantUML y SVG exportados
+└── assets/            # Mapa OSM de Arequipa (PNG + bbox) e íconos
 ```
 
 ---
