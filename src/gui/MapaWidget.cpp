@@ -25,6 +25,10 @@ static constexpr float  GRAFO_X_MAX   = 710.f;
 static constexpr float  GRAFO_Y_MIN   = 80.f;
 static constexpr float  GRAFO_Y_MAX   = 560.f;
 
+void MapaWidget::setDuracionMovimiento(int ms) {
+    if (m_timerAnimacion) m_timerAnimacion->setInterval(ms);
+}
+
 MapaWidget::MapaWidget(const MapaArequipa& mapa, QWidget* parent)
     : QWidget(parent), m_mapa(mapa) {
     setMinimumSize(800, 600);

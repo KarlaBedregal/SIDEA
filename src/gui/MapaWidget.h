@@ -26,6 +26,7 @@ public:
     void setIncidentes(const std::vector<std::shared_ptr<Incidente>>& incidentes);
     void setZonasRiesgo(const std::vector<PrediccionZona>& zonas);
     void cargarMapaFondo(const QString& ruta, double latNW, double lonNW, double latSE, double lonSE);
+    void setDuracionMovimiento(int ms);
     void actualizar();
 
 protected:
