@@ -1,12 +1,15 @@
 #pragma once
 #include <QMainWindow>
+#include <QTimer>
 #include <memory>
 
 class MapaWidget;
 class PanelControl;
 class EstadisticasWidget;
+class LogPanel;
 class MapaArequipa;
 class IObserver;
+class GeneradorIncidentes;
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -30,11 +33,19 @@ private slots:
 private:
     void configurarUI();
     void configurarConexiones();
+    void inicializarEscenario();
+    void actualizarVista();
 
     Ui::MainWindow* ui;
     std::unique_ptr<MapaArequipa> m_mapa;
     MapaWidget* m_mapaWidget = nullptr;
     PanelControl* m_panelControl = nullptr;
     EstadisticasWidget* m_estadisticasWidget = nullptr;
+    LogPanel* m_logPanel = nullptr;
     std::shared_ptr<IObserver> m_observer;
+
+    std::unique_ptr<GeneradorIncidentes> m_generador;
+    QTimer* m_timerSimulacion = nullptr;
+    bool m_simulacionIniciada = false;
+    bool m_simulacionPausada = false;
 };

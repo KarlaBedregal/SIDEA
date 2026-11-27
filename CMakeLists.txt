@@ -33,6 +33,7 @@ set(SIDEA_LIB_SOURCES
     src/gui/MapaWidget.cpp
     src/gui/PanelControl.cpp
     src/gui/EstadisticasWidget.cpp
+    src/gui/LogPanel.cpp
     src/stats/Estadisticas.cpp
     src/prediction/HistorialIncidentes.cpp
     src/prediction/ModeloPrediccion.cpp

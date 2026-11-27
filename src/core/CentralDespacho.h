@@ -7,6 +7,8 @@
 #include <condition_variable>
 #include <thread>
 #include "patterns/IObservable.h"
+#include "prediction/HistorialIncidentes.h"
+#include "prediction/ModeloPrediccion.h"
 
 class Incidente;
 class Unidad;
@@ -30,9 +32,12 @@ public:
     void detener();
     void setTickMs(int ms);
     void notificarUnidadLibre();
+    void registrarIncidenteAtendido(const Incidente& incidente);
 
     std::vector<std::shared_ptr<Unidad>> getUnidades() const;
     std::vector<std::shared_ptr<Incidente>> getIncidentesPendientes() const;
+    std::vector<RegistroHistorial> getHistorialIncidentes() const;
+    std::vector<PrediccionZona> zonasDeMayorRiesgo(int cantidad, int horaActual) const;
     int totalIncidentesPendientes() const;
     int totalIncidentesAtendidos() const;
     void reiniciar();
@@ -45,6 +50,7 @@ private:
 
     std::vector<std::shared_ptr<Unidad>> m_unidades;
     std::vector<std::shared_ptr<Incidente>> m_cola;
+    HistorialIncidentes m_historial;
     std::unique_ptr<EstrategiaDespacho> m_estrategia;
     std::unique_ptr<MapaArequipa> m_mapa;
     std::vector<std::unique_ptr<SimuladorThread>> m_hilos;
