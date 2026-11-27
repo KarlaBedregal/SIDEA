@@ -147,26 +147,14 @@ void MainWindow::onIniciarSimulacion() {
             onEstrategiaChanged(m_panelControl->estrategiaSeleccionada());
         }
 
-        m_simuladores.clear();
-        for (const auto& u : CentralDespacho::instancia().getUnidades()) {
-            auto sim = std::make_unique<SimuladorThread>(u, *m_mapa, vel);
-            sim->iniciar();
-            m_simuladores.push_back(std::move(sim));
-        }
-
-        m_generador = std::make_unique<GeneradorIncidentes>(
-            CentralDespacho::instancia(), vel * 2, m_mapa->totalNodos());
-        m_generador->iniciar();
+        CentralDespacho::instancia().setTickMs(vel);
+        CentralDespacho::instancia().iniciar();
 
         if (m_timerSimulacion) m_timerSimulacion->start(vel);
         m_simulacionIniciada = true;
         m_simulacionPausada = false;
         if (m_panelControl) m_panelControl->marcarIniciado();
     } else if (m_simulacionPausada) {
-        for (auto& sim : m_simuladores) {
-            if (sim) sim->reanudar();
-        }
-        if (m_generador) m_generador->reanudar();
 
         int vel = m_panelControl ? m_panelControl->velocidadSimulacion() : 500;
         if (m_timerSimulacion) m_timerSimulacion->start(vel);
@@ -177,10 +165,6 @@ void MainWindow::onIniciarSimulacion() {
 
 void MainWindow::onPausarSimulacion() {
     if (m_simulacionIniciada && !m_simulacionPausada) {
-        for (auto& sim : m_simuladores) {
-            if (sim) sim->pausar();
-        }
-        if (m_generador) m_generador->pausar();
 
         if (m_timerSimulacion) m_timerSimulacion->stop();
         m_simulacionPausada = true;
@@ -193,16 +177,6 @@ void MainWindow::onDetenerSimulacion() {
 
     if (m_timerSimulacion) m_timerSimulacion->stop();
 
-    if (m_generador) {
-        m_generador->detener();
-        m_generador.reset();
-    }
-
-    for (auto& sim : m_simuladores) {
-        if (sim) sim->detener();
-    }
-    m_simuladores.clear();
-
     CentralDespacho::instancia().detener();
 
     m_simulacionIniciada = false;
@@ -212,7 +186,6 @@ void MainWindow::onDetenerSimulacion() {
 }
 
 void MainWindow::onTickSimulacion() {
-    CentralDespacho::instancia().procesarCola();
     if (m_mapaWidget) {
         m_mapaWidget->setUnidades(CentralDespacho::instancia().getUnidades());
         m_mapaWidget->actualizar();
@@ -221,7 +194,6 @@ void MainWindow::onTickSimulacion() {
 }
 
 void MainWindow::onEventoDespacho(QString evento) {
-    CentralDespacho::instancia().procesarCola();
     if (m_mapaWidget) {
         m_mapaWidget->setUnidades(CentralDespacho::instancia().getUnidades());
         m_mapaWidget->actualizar();

@@ -44,8 +44,6 @@ private:
     EstadisticasWidget* m_estadisticasWidget = nullptr;
     std::shared_ptr<IObserver> m_observer;
 
-    std::vector<std::unique_ptr<SimuladorThread>> m_simuladores;
-    std::unique_ptr<GeneradorIncidentes> m_generador;
     QTimer* m_timerSimulacion = nullptr;
     bool m_simulacionIniciada = false;
     bool m_simulacionPausada = false;
