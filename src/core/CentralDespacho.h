@@ -8,6 +8,7 @@
 #include <thread>
 #include "patterns/IObservable.h"
 #include "prediction/HistorialIncidentes.h"
+#include "prediction/ModeloPrediccion.h"
 
 struct ResumenComparacion {
     std::string estrategia;
@@ -80,6 +81,5 @@ private:
         bool prediccion = false;
     };
     bool m_reubicacionPreventiva = false;
-    HistorialIncidentes m_historial;
     std::vector<RegistroDespacho> m_registros;
 };
